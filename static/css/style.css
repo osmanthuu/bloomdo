@@ -1,0 +1,1418 @@
+/* === CUTE PASTEL TO-DO LIST MAIN STYLESHEET === */
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Patrick+Hand&family=Quicksand:wght@400;500;600;700&display=swap');
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  line-height: 1.5;
+}
+
+/* Font Choices */
+body.font-rounded {
+  font-family: 'Quicksand', sans-serif;
+}
+body.font-handwritten {
+  font-family: 'Patrick Hand', cursive, sans-serif;
+}
+body.font-bubbly {
+  font-family: 'Fredoka', cursive, sans-serif;
+}
+
+/* Text Size Variations */
+body.text-size-sm {
+  font-size: 13.5px;
+}
+body.text-size-md {
+  font-size: 15px;
+}
+body.text-size-lg {
+  font-size: 17px;
+}
+
+/* Layout Modes */
+body.layout-compact .task-card {
+  padding: 10px 14px 10px 14px;
+  margin-bottom: 8px;
+}
+body.layout-compact .task-header {
+  margin-bottom: 4px;
+}
+body.layout-compact .washi-tape {
+  height: 12px;
+  top: -6px;
+}
+body.layout-comfortable .task-card {
+  padding: 18px 20px 16px 20px;
+  margin-bottom: 16px;
+}
+body.layout-comfortable .washi-tape {
+  height: 16px;
+  top: -8px;
+}
+
+/* Floating Petals Layer */
+#petal-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* Main App Wrapper */
+.app-container {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 20px 24px 60px 24px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Header & Navbar */
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 28px;
+  padding: 14px 24px;
+  margin-bottom: 22px;
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(10px);
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  border: 1.5px solid var(--accent-soft);
+  font-size: 24px;
+}
+
+.brand-title-wrap h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.brand-date {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Mood Check-In Bar */
+.mood-picker-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-secondary);
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--card-border);
+}
+
+.mood-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.mood-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 3px 5px;
+  border-radius: 8px;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.mood-btn:hover {
+  transform: scale(1.3);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.mood-btn.selected {
+  background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transform: scale(1.2);
+}
+
+/* Header Action Controls */
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.streak-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--accent-hover);
+}
+
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1.5px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.icon-btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent-color);
+  transform: scale(1.05);
+}
+
+/* Main Navigation Tabs */
+.view-tabs-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 22px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.view-tab {
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  padding: 9px 18px;
+  border-radius: 20px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.view-tab:hover {
+  border-color: var(--accent-soft);
+  color: var(--text-main);
+  transform: translateY(-2px);
+}
+
+.view-tab.active {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: #ffffff;
+  box-shadow: 0 4px 14px var(--washi-tape-1);
+}
+
+/* Smart Quick Add Bar */
+.quick-add-wrapper {
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 24px;
+  padding: 14px 20px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-soft);
+  position: relative;
+  transition: border-color 0.2s;
+}
+
+.quick-add-wrapper:focus-within {
+  border-color: var(--accent-color);
+  box-shadow: var(--shadow-hover);
+}
+
+.quick-add-input-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.quick-add-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 1.05rem;
+  color: var(--text-main);
+  font-family: inherit;
+  outline: none;
+}
+
+.quick-add-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+
+.btn-primary {
+  background: var(--accent-color);
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 18px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+}
+
+/* Live Parser Preview Chips */
+.parser-preview-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--card-border);
+}
+
+.preview-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  color: var(--text-main);
+  border: 1px solid var(--card-border);
+}
+
+.preview-chip.chip-date { background: #fef08a; color: #713f12; }
+.preview-chip.chip-priority { background: #fed7aa; color: #9a3412; }
+.preview-chip.chip-tag { background: #e9d5ff; color: #581c87; }
+.preview-chip.chip-est { background: #bbf7d0; color: #14532d; }
+
+/* Dashboard Grid Layout */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 270px 1fr 310px;
+  gap: 24px;
+}
+
+@media (max-width: 1100px) {
+  .dashboard-grid {
+    grid-template-columns: 240px 1fr;
+  }
+  .widgets-right-column {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .top-nav {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .nav-actions {
+    justify-content: space-between;
+  }
+}
+
+/* Sidebar Lists & Filter Menu */
+.sidebar-panel {
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 24px;
+  padding: 18px 16px;
+  box-shadow: var(--shadow-soft);
+  height: fit-content;
+}
+
+.sidebar-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin: 14px 10px 8px 10px;
+}
+
+.list-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 14px;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 3px;
+}
+
+.list-menu-item:hover {
+  background: var(--bg-secondary);
+  color: var(--accent-hover);
+}
+
+.list-menu-item.active {
+  background: var(--bg-secondary);
+  color: var(--accent-hover);
+  border-left: 4px solid var(--accent-color);
+}
+
+.list-item-badge {
+  background: var(--card-bg);
+  font-size: 0.75rem;
+  padding: 2px 7px;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+}
+
+/* Categories Tag List */
+.category-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+/* Templates Section */
+.template-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px dashed var(--card-border);
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  margin-bottom: 6px;
+  transition: all 0.2s;
+}
+
+.template-btn:hover {
+  background: var(--card-bg);
+  border-color: var(--accent-color);
+  transform: translateX(3px);
+}
+
+/* Central Content: Tasks Column */
+.tasks-center-column {
+  min-height: 400px;
+}
+
+/* Filter & Search Bar */
+.tasks-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.search-box-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 14px 8px 34px;
+  border-radius: 16px;
+  border: 1.5px solid var(--card-border);
+  background: var(--card-bg);
+  font-family: inherit;
+  font-size: 0.88rem;
+  color: var(--text-main);
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: var(--accent-color);
+}
+
+.search-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.filter-pills {
+  display: flex;
+  gap: 6px;
+}
+
+.filter-pill {
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  padding: 6px 12px;
+  border-radius: 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-pill.active {
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+  border-color: var(--accent-color);
+}
+
+/* Bulk Actions Toolbar */
+.bulk-toolbar {
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--card-border);
+  border-radius: 18px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  animation: cutePop 0.2s ease-out;
+}
+
+.bulk-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bulk-btn {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  padding: 5px 12px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-main);
+  transition: all 0.15s;
+}
+
+.bulk-btn:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-hover);
+}
+
+/* "Eat The Frog" Banner */
+.eat-frog-banner {
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--card-bg) 100%);
+  border: 1.5px dashed var(--accent-color);
+  border-radius: 20px;
+  padding: 12px 18px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-soft);
+}
+
+.frog-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--accent-hover);
+}
+
+/* Task Cards & Washi Tape Styling */
+.task-card {
+  position: relative;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  user-select: none;
+}
+
+.task-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+.task-card.dragging {
+  opacity: 0.45;
+  transform: scale(0.98);
+}
+
+/* Cute Washi Tape Strip */
+.washi-tape {
+  position: absolute;
+  top: -8px;
+  left: 35px;
+  width: 90px;
+  height: 16px;
+  background: var(--washi-tape-1);
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.06);
+  opacity: 0.85;
+  transform: rotate(-1.5deg);
+  border-left: 2px dashed rgba(255,255,255,0.7);
+  border-right: 2px dashed rgba(255,255,255,0.7);
+  pointer-events: none;
+}
+
+.task-card:nth-child(even) .washi-tape {
+  left: auto;
+  right: 35px;
+  transform: rotate(2deg);
+  background: var(--washi-tape-2);
+}
+
+/* Task Header & Body */
+.task-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.drag-handle {
+  color: var(--card-border);
+  cursor: grab;
+  font-size: 16px;
+  padding-top: 2px;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Custom Checkbox Shapes: Flower, Heart, Star */
+.custom-checkbox-wrapper {
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 2px;
+}
+
+.custom-checkbox {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Flower Checkbox (Default) */
+.shape-flower .custom-checkbox {
+  border-radius: 50%;
+  border: 2px solid var(--accent-color);
+  background: transparent;
+  color: #ffffff;
+  font-size: 14px;
+}
+.shape-flower .custom-checkbox.checked {
+  background: var(--accent-color);
+  box-shadow: 0 2px 8px var(--washi-tape-1);
+}
+
+/* Heart Checkbox */
+.shape-heart .custom-checkbox {
+  color: var(--accent-color);
+  font-size: 22px;
+  border: none;
+  background: transparent;
+}
+.shape-heart .custom-checkbox.checked {
+  color: var(--accent-hover);
+  transform: scale(1.15);
+}
+
+/* Star Checkbox */
+.shape-star .custom-checkbox {
+  color: #facc15;
+  font-size: 22px;
+  border: none;
+  background: transparent;
+}
+.shape-star .custom-checkbox.checked {
+  color: #eab308;
+  transform: scale(1.15) rotate(15deg);
+}
+
+/* Task Content */
+.task-body {
+  flex: 1;
+}
+
+.task-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.task-title {
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: var(--text-main);
+  word-break: break-word;
+}
+
+.pin-icon {
+  color: #f59e0b;
+  font-size: 13px;
+}
+
+.task-notes {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  word-break: break-word;
+}
+
+/* Badges & Meta Row */
+.task-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.meta-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+}
+
+.meta-badge.badge-overdue {
+  background: #ffe4e6;
+  color: #e11d48;
+  border-color: #fecdd3;
+  font-weight: 700;
+}
+
+.priority-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.priority-dot.dot-high { background: #f43f5e; box-shadow: 0 0 6px #f43f5e; }
+.priority-dot.dot-medium { background: #f59e0b; }
+.priority-dot.dot-low { background: #10b981; }
+
+.dependency-lock-badge {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+/* Task Card Actions Menu */
+.task-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.85;
+}
+
+.action-mini-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.action-mini-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--accent-hover);
+  transform: scale(1.15);
+}
+
+/* Subtasks Checklist */
+.subtasks-wrapper {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--card-border);
+}
+
+.subtasks-progress-bar {
+  height: 4px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.subtasks-progress-fill {
+  height: 100%;
+  background: var(--accent-color);
+  transition: width 0.3s ease;
+}
+
+.subtask-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.84rem;
+  color: var(--text-main);
+  padding: 3px 0;
+}
+
+.subtask-checkbox {
+  cursor: pointer;
+  color: var(--accent-color);
+}
+
+/* Empty State */
+.empty-state-card {
+  text-align: center;
+  padding: 50px 20px;
+  background: var(--card-bg);
+  border: 1.5px dashed var(--card-border);
+  border-radius: 28px;
+  margin-top: 20px;
+}
+
+.empty-state-art {
+  font-size: 50px;
+  margin-bottom: 12px;
+  display: inline-block;
+  animation: mascotSleep 4s infinite ease-in-out;
+}
+
+.empty-state-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+
+.empty-state-desc {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* Right Column Widgets */
+.widgets-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.widget-card {
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 24px;
+  padding: 18px 20px;
+  box-shadow: var(--shadow-soft);
+  position: relative;
+}
+
+.widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.widget-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Pomodoro Timer Widget */
+.pomodoro-display {
+  text-align: center;
+  padding: 10px 0;
+}
+
+.pomodoro-time {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--accent-hover);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+}
+
+.pomodoro-mode-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.pomodoro-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Habits Tracker Widget */
+.habit-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--card-border);
+}
+
+.habit-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.habit-day-dots {
+  display: flex;
+  gap: 5px;
+}
+
+.habit-check-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--card-border);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #ffffff;
+  transition: all 0.2s;
+}
+
+.habit-check-btn.completed {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+/* Daily Motivational Quote */
+.quote-card {
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--card-bg) 100%);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  padding: 16px;
+  font-style: italic;
+  font-size: 0.88rem;
+  color: var(--text-main);
+  position: relative;
+}
+
+.quote-refresh-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* Countdowns Card */
+.countdown-card-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-secondary);
+  border-radius: 14px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  font-size: 0.86rem;
+}
+
+.countdown-days-badge {
+  font-weight: 700;
+  color: var(--accent-hover);
+  background: var(--card-bg);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* Mascot Companion Dock */
+.mascot-dock-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 24px;
+  padding: 12px 16px;
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.mascot-dock-container:hover {
+  transform: translateY(-2px);
+}
+
+.mascot-svg-wrap {
+  width: 54px;
+  height: 54px;
+  flex-shrink: 0;
+}
+
+.mascot-speech-bubble {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-main);
+  background: var(--bg-secondary);
+  padding: 8px 12px;
+  border-radius: 14px;
+  position: relative;
+}
+
+.mascot-speech-bubble::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 6px 6px 6px 0;
+  border-style: solid;
+  border-color: transparent var(--bg-secondary) transparent transparent;
+}
+
+/* Garden Meadow Canvas Container */
+.garden-view-container {
+  background: linear-gradient(180deg, #e0f2fe 0%, #dcfce7 65%, #bbf7d0 100%);
+  border: 2px solid var(--card-border);
+  border-radius: 28px;
+  height: 480px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
+  margin-bottom: 24px;
+}
+
+.garden-sun {
+  position: absolute;
+  top: 25px;
+  right: 35px;
+  width: 50px;
+  height: 50px;
+  background: #facc15;
+  border-radius: 50%;
+  box-shadow: 0 0 25px #fde047;
+}
+
+.garden-cloud {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 30px;
+  height: 25px;
+  width: 75px;
+}
+
+.garden-flowers-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.garden-flower-element {
+  position: absolute;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.garden-flower-element:hover {
+  transform: scale(1.35) !important;
+  z-index: 10;
+}
+
+/* Calendar Grid View */
+.calendar-view-wrap {
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 28px;
+  padding: 24px;
+  box-shadow: var(--shadow-soft);
+  margin-bottom: 24px;
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.calendar-weekday-title {
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  padding-bottom: 6px;
+}
+
+.calendar-day-cell {
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  min-height: 80px;
+  padding: 6px;
+  position: relative;
+  transition: background 0.2s;
+}
+
+.calendar-day-cell.droppable-hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-color);
+}
+
+.calendar-day-num {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.calendar-day-cell.is-today .calendar-day-num {
+  color: var(--accent-hover);
+  font-weight: 800;
+}
+
+.calendar-task-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  padding: 2px 6px;
+  border-radius: 8px;
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+/* Stickers Collection Book */
+.stickers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.sticker-card {
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 18px;
+  padding: 16px 12px;
+  text-align: center;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.2s;
+}
+
+.sticker-card:hover {
+  transform: translateY(-3px) rotate(1deg);
+}
+
+.sticker-emoji {
+  font-size: 42px;
+  margin-bottom: 6px;
+}
+
+.sticker-card.locked {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+
+.sticker-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.sticker-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Modals */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(5px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-content {
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 28px;
+  padding: 26px 30px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.2);
+  transform: scale(0.94);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-overlay.open .modal-content {
+  transform: scale(1);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+/* Form Groups inside Modals */
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1.5px solid var(--card-border);
+  background: var(--bg-secondary);
+  font-family: inherit;
+  font-size: 0.92rem;
+  color: var(--text-main);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--accent-color);
+  background: var(--card-bg);
+}
+
+/* Focus Mode Zen Overlay */
+.focus-mode-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-primary);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.focus-mode-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.focus-task-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-main);
+  max-width: 650px;
+  margin-bottom: 24px;
+}
+
+/* Password Lock Screen */
+.lock-screen-modal {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-primary);
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.lock-card {
+  background: var(--card-bg);
+  border: 2px solid var(--accent-soft);
+  border-radius: 32px;
+  padding: 36px 32px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-hover);
+}
+
+/* Toast Notifications */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cute-toast {
+  background: var(--card-bg);
+  border: 1.5px solid var(--accent-color);
+  padding: 12px 18px;
+  border-radius: 18px;
+  box-shadow: var(--shadow-hover);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  animation: cutePop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.toast-undo-btn {
+  background: var(--accent-color);
+  color: #ffffff;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Print Stylesheet for Pristine Paper Checklist */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .top-nav, .view-tabs-bar, .quick-add-wrapper, .sidebar-panel,
+  .widgets-right-column, .tasks-toolbar, .bulk-toolbar, .icon-btn,
+  .task-actions, .drag-handle, #petal-container, .mascot-dock-container {
+    display: none !important;
+  }
+  .dashboard-grid {
+    display: block !important;
+  }
+  .task-card {
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+    margin-bottom: 12px;
+    background: #ffffff !important;
+  }
+  .washi-tape {
+    display: none !important;
+  }
+}

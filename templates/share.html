@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title or "Shared Pastel To-Do List" }} 🌸</title>
+  <link rel="stylesheet" href="/static/css/themes.css">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    body {
+      background-color: var(--bg-primary);
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .share-container {
+      max-width: 680px;
+      width: 100%;
+      background: var(--card-bg);
+      border: 2px solid var(--accent-soft);
+      border-radius: 28px;
+      padding: 36px 32px;
+      box-shadow: var(--shadow-hover);
+    }
+    .share-header {
+      text-align: center;
+      margin-bottom: 24px;
+      border-bottom: 2px dashed var(--card-border);
+      padding-bottom: 18px;
+    }
+    .share-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: var(--bg-secondary);
+      border-radius: 16px;
+      margin-bottom: 10px;
+    }
+    .share-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 8px;
+      background: var(--card-bg);
+      margin-left: auto;
+    }
+  </style>
+</head>
+<body class="font-rounded">
+  <div class="share-container">
+    {% if error %}
+      <div style="text-align: center; padding: 40px 0;">
+        <span style="font-size: 48px;">🌸</span>
+        <h2 style="margin-top: 12px; color: var(--accent-hover);">Oops!</h2>
+        <p style="color: var(--text-muted); margin-top: 6px;">{{ error }}</p>
+      </div>
+    {% else %}
+      <div class="share-header">
+        <span style="font-size: 38px;">🌸</span>
+        <h1 style="font-size: 1.5rem; margin-top: 8px; color: var(--text-main);">{{ title }}</h1>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Shared on {{ shared_at[:10] if shared_at else '' }}</p>
+      </div>
+
+      <div class="share-tasks-list">
+        {% for t in tasks %}
+          <div class="share-item">
+            <span style="font-size: 18px;">{{ '✓' if t.is_completed else '○' }}</span>
+            <span style="font-size: 1rem; {{ 'text-decoration: line-through; opacity: 0.6;' if t.is_completed else '' }}">{{ t.title }}</span>
+            {% if t.priority %}
+              <span class="share-badge">{{ t.priority.upper() }}</span>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <div style="text-align: center; margin-top: 28px;">
+        <button class="btn-primary bloom-hover" onclick="window.print()" style="margin: auto;">
+          🖨️ Print / Save as PDF
+        </button>
+      </div>
+    {% endif %}
+  </div>
+</body>
+</html>

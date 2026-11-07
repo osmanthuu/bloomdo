@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fdf2f8"/>
+      <stop offset="100%" stop-color="#fbcfe8"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#f472b6" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <!-- Background Card -->
+  <rect width="512" height="512" rx="128" fill="url(#bg)"/>
+  
+  <!-- Flower Petals -->
+  <g filter="url(#shadow)" transform="translate(256, 230)">
+    <!-- 5 Cute Petals -->
+    <ellipse cx="0" cy="-80" rx="42" ry="55" fill="#f472b6" opacity="0.9"/>
+    <ellipse cx="76" cy="-25" rx="42" ry="55" transform="rotate(72, 76, -25)" fill="#f472b6" opacity="0.9"/>
+    <ellipse cx="47" cy="65" rx="42" ry="55" transform="rotate(144, 47, 65)" fill="#f472b6" opacity="0.9"/>
+    <ellipse cx="-47" cy="65" rx="42" ry="55" transform="rotate(216, -47, 65)" fill="#f472b6" opacity="0.9"/>
+    <ellipse cx="-76" cy="-25" rx="42" ry="55" transform="rotate(288, -76, -25)" fill="#f472b6" opacity="0.9"/>
+    <!-- Flower Center -->
+    <circle cx="0" cy="0" r="48" fill="#fef08a"/>
+    <circle cx="0" cy="0" r="40" fill="#facc15"/>
+    <!-- Checkmark inside flower -->
+    <path d="M -18 2 L -4 16 L 22 -12" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <!-- Cute Stars / Sparkles -->
+  <path d="M 110 130 Q 125 130 125 115 Q 125 130 140 130 Q 125 130 125 145 Q 125 130 110 130" fill="#f472b6"/>
+  <path d="M 370 120 Q 385 120 385 105 Q 385 120 400 120 Q 385 120 385 135 Q 385 120 370 120" fill="#facc15"/>
+  <path d="M 380 380 Q 395 380 395 365 Q 395 380 410 380 Q 395 380 395 395 Q 395 380 380 380" fill="#c084fc"/>
+  <path d="M 120 370 Q 135 370 135 355 Q 135 370 150 370 Q 135 370 135 385 Q 135 370 120 370" fill="#34d399"/>
+  <!-- App text -->
+  <text x="256" y="440" font-family="'Quicksand', 'Nunito', sans-serif" font-weight="bold" font-size="38" fill="#be185d" text-anchor="middle">Pastel Blooms</text>
+</svg>

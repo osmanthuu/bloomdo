@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="pink">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A cute, serene pastel to-do list web app with themes, flower cursors, blooming garden, and AI PDF summarisation.">
+  <meta name="theme-color" content="#fbcfe8">
+  <title>Pastel Blooms 🌸 Cute To-Do List</title>
+
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/static/icons/icon.svg">
+  
+  <link rel="stylesheet" href="/static/css/themes.css">
+  <link rel="stylesheet" href="/static/css/animations.css">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="font-rounded text-size-md layout-comfortable shape-flower season-spring">
+
+  <!-- Floating Petals Layer -->
+  <div id="petal-container" aria-hidden="true"></div>
+
+  <!-- Main Container -->
+  <main class="app-container">
+    
+    <!-- Top Navigation Bar -->
+    <header class="top-nav">
+      <div class="brand-section">
+        <div class="brand-icon" aria-hidden="true">🌸</div>
+        <div class="brand-title-wrap">
+          <h1 id="greeting-heading">Pastel Blooms ✨</h1>
+          <span class="brand-date" id="today-date-text">Loading date...</span>
+        </div>
+      </div>
+
+      <!-- Mood Check-In -->
+      <div class="mood-picker-wrap" title="Daily Mood Check-in">
+        <span class="mood-label">Mood:</span>
+        <button class="mood-btn" data-mood="🌸" title="Blooming & Great">🌸</button>
+        <button class="mood-btn" data-mood="😊" title="Happy & Sweet">😊</button>
+        <button class="mood-btn" data-mood="🍵" title="Calm & Cozy">🍵</button>
+        <button class="mood-btn" data-mood="☁️" title="A bit dreamy">☁️</button>
+        <button class="mood-btn" data-mood="🌧️" title="A little down">🌧️</button>
+        <button class="mood-btn" data-mood="💤" title="Sleepy / Resting">💤</button>
+      </div>
+
+      <!-- Action Controls -->
+      <div class="nav-actions">
+        <div class="streak-badge" id="streak-count-badge" title="Daily Completion Streak">🔥 1 Day Streak</div>
+        <button class="icon-btn bloom-hover" id="mute-toggle-btn" title="Toggle Sound Chimes">🔔</button>
+        <button class="icon-btn bloom-hover" id="panic-lock-btn" title="Panic Lock (Alt+L)">🔒</button>
+        <button class="icon-btn bloom-hover" id="shortcuts-btn" title="Keyboard Shortcuts (?)">⌨️</button>
+        <button class="icon-btn bloom-hover" id="open-settings-btn" title="Theme & Preferences">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="view-tabs-bar" aria-label="Main navigation">
+      <button class="view-tab active" data-view="tasks">📋 Tasks</button>
+      <button class="view-tab" data-view="calendar">📅 Planner & Calendar</button>
+      <button class="view-tab" data-view="garden">🌱 Blooming Garden</button>
+      <button class="view-tab" data-view="pomodoro">⏱️ Pomodoro Timer</button>
+      <button class="view-tab" data-view="stats">📊 Stats & Weekly Review</button>
+      <button class="view-tab" data-view="stickers">🏆 Stickers & Goals</button>
+      <button class="view-tab" data-view="pdf">📄 AI PDF Summarizer</button>
+    </nav>
+
+    <!-- Smart Quick-Add Bar -->
+    <section class="quick-add-wrapper" aria-label="Quick Add Task">
+      <div class="quick-add-input-row">
+        <span style="font-size: 20px;">🌸</span>
+        <input type="text" id="quick-add-input" class="quick-add-input" 
+               placeholder="Add a task... e.g. 'study chapter 3 tomorrow 4pm !high #school ~45m' (Press Enter)" 
+               autocomplete="off" aria-label="Smart task input" />
+        <button class="btn-primary bloom-hover" id="quick-add-btn">
+          <span>Add Task</span>
+          <span style="font-size: 16px;">✨</span>
+        </button>
+      </div>
+      <!-- Live Natural-Language Preview Chips -->
+      <div class="parser-preview-bar" id="parser-chips-bar" style="display: none;"></div>
+    </section>
+
+    <!-- Dashboard Main Grid -->
+    <div class="dashboard-grid">
+      
+      <!-- Left Sidebar: Lists, Tags, Templates -->
+      <aside class="sidebar-panel">
+        <h2 class="sidebar-title">My Lists</h2>
+        <div id="sidebar-lists-menu"></div>
+
+        <h2 class="sidebar-title">Categories</h2>
+        <div id="sidebar-categories-menu"></div>
+
+        <h2 class="sidebar-title">Quick Templates</h2>
+        <button class="template-btn" data-template="morning_routine">🌅 Morning Routine</button>
+        <button class="template-btn" data-template="study_session">📚 Study Session</button>
+        <button class="template-btn" data-template="grocery_run">🛒 Grocery Run</button>
+        <button class="template-btn" data-template="self_care_day">🛁 Self-Care Day</button>
+
+        <h2 class="sidebar-title">Actions</h2>
+        <button class="template-btn" id="share-list-btn">🔗 Share / Print List</button>
+        <button class="template-btn" id="open-pdf-modal-btn">📄 Summarize PDF</button>
+      </aside>
+
+      <!-- Center Content Area: Multiple Views -->
+      <section class="tasks-center-column">
+        
+        <!-- VIEW: TASKS -->
+        <div id="view-tasks" class="view-section">
+          
+          <!-- Tasks Toolbar: Search & Filters -->
+          <div class="tasks-toolbar">
+            <div class="search-box-wrap">
+              <span class="search-icon" aria-hidden="true">🔍</span>
+              <input type="text" id="search-tasks-input" class="search-input" placeholder="Search tasks... (Press /)" aria-label="Search tasks" />
+            </div>
+            <div class="filter-pills">
+              <button class="filter-pill active" data-filter="all">All</button>
+              <button class="filter-pill" data-filter="active">Active</button>
+              <button class="filter-pill" data-filter="completed">Completed</button>
+              <button class="filter-pill" data-filter="archived">Archived</button>
+            </div>
+          </div>
+
+          <!-- Bulk Actions Bar -->
+          <div class="bulk-toolbar" id="bulk-toolbar" style="display: none;">
+            <span id="bulk-selected-count" style="font-weight: 700; font-size: 0.88rem;">0 selected</span>
+            <div class="bulk-actions-group">
+              <button class="bulk-btn" id="bulk-complete-btn">Complete All</button>
+              <button class="bulk-btn" id="bulk-snooze-btn">Snooze to Tomorrow</button>
+              <button class="bulk-btn" id="bulk-delete-btn" style="color: #e11d48;">Delete All</button>
+            </div>
+          </div>
+
+          <!-- Eat The Frog Banner -->
+          <div class="eat-frog-banner" id="eat-frog-banner" style="display: none;"></div>
+
+          <!-- Today's Progress Bar -->
+          <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 12px 18px; margin-bottom: 18px; box-shadow: var(--shadow-soft);">
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px;">
+              <span>Today's Blooming Progress 🌸</span>
+              <span id="today-progress-text">0/0 Done</span>
+            </div>
+            <div style="height: 8px; background: var(--bg-secondary); border-radius: 6px; overflow: hidden;">
+              <div id="today-progress-fill" style="width: 0%; height: 100%; background: var(--accent-color); transition: width 0.4s ease;"></div>
+            </div>
+          </div>
+
+          <!-- Task Items List -->
+          <div id="task-items-list"></div>
+
+        </div>
+
+        <!-- VIEW: CALENDAR / PLANNER -->
+        <div id="view-calendar" class="view-section" style="display: none;">
+          <div class="calendar-view-wrap">
+            <div class="calendar-header">
+              <h2 style="font-size: 1.2rem; font-weight: 700;">Monthly Planner 📅</h2>
+              <span style="font-size: 0.85rem; color: var(--text-muted);">Tip: Drag any task onto a calendar day to reschedule!</span>
+            </div>
+            <div class="calendar-grid" style="margin-bottom: 8px;">
+              <div class="calendar-weekday-title">Sun</div>
+              <div class="calendar-weekday-title">Mon</div>
+              <div class="calendar-weekday-title">Tue</div>
+              <div class="calendar-weekday-title">Wed</div>
+              <div class="calendar-weekday-title">Thu</div>
+              <div class="calendar-weekday-title">Fri</div>
+              <div class="calendar-weekday-title">Sat</div>
+            </div>
+            <div class="calendar-grid" id="calendar-month-grid"></div>
+          </div>
+        </div>
+
+        <!-- VIEW: BLOOMING GARDEN -->
+        <div id="view-garden" class="view-section" style="display: none;">
+          <div class="garden-view-container">
+            <div class="garden-sun"></div>
+            <div class="garden-cloud" style="top: 30px; left: 60px;"></div>
+            <div class="garden-cloud" style="top: 60px; left: 240px; opacity: 0.7;"></div>
+            <div class="garden-cloud" style="top: 25px; left: 520px;"></div>
+            <div class="garden-flowers-layer" id="garden-meadow-flowers"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); border: 1.5px solid var(--card-border); border-radius: 20px; padding: 14px 20px;">
+            <div>
+              <span style="font-weight: 700; font-size: 1rem;" id="garden-flower-count">0 Flowers Bloomed 💐</span>
+              <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;">Every time you complete a task, a cute flower sprouts in your meadow!</p>
+            </div>
+            <button class="bulk-btn" onclick="window.pastelGarden.clearGarden()">Clear Meadow</button>
+          </div>
+        </div>
+
+        <!-- VIEW: POMODORO TIMER -->
+        <div id="view-pomodoro" class="view-section" style="display: none;">
+          <div class="widget-card" style="text-align: center; padding: 40px 20px;">
+            <div class="pomodoro-mode-badge" id="pomodoro-mode-badge" style="font-size: 1.1rem;">Focus Session 🎯</div>
+            <div class="pomodoro-time" id="pomodoro-timer-display" style="font-size: 4rem; margin: 15px 0;">25:00</div>
+            <div class="pomodoro-controls">
+              <button class="btn-primary bloom-hover" id="pomodoro-start-btn" style="padding: 12px 28px; font-size: 1.05rem;">Start Focus ⏱️</button>
+              <button class="bulk-btn" id="pomodoro-reset-btn" style="padding: 12px 20px;">Reset</button>
+            </div>
+            <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 20px;">
+              25 minutes of cozy, deep focus followed by a 5-minute sweet tea break!
+            </p>
+          </div>
+        </div>
+
+        <!-- VIEW: STATS & INSIGHTS -->
+        <div id="view-stats" class="view-section" style="display: none;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+            <div class="widget-card">
+              <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">Completion Rate</span>
+              <div id="stats-completion-rate" style="font-size: 2rem; font-weight: 700; color: var(--accent-hover); margin-top: 6px;">0%</div>
+            </div>
+            <div class="widget-card">
+              <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">Total Time Tracked</span>
+              <div id="stats-time-spent" style="font-size: 2rem; font-weight: 700; color: #10b981; margin-top: 6px;">0m</div>
+            </div>
+          </div>
+          <div class="widget-card">
+            <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 14px;">Weekly Completed Tasks History 📈</h3>
+            <div id="stats-weekly-chart" style="display: flex; justify-content: space-around; align-items: flex-end; height: 160px; padding-top: 20px;"></div>
+          </div>
+        </div>
+
+        <!-- VIEW: STICKERS & GOALS -->
+        <div id="view-stickers" class="view-section" style="display: none;">
+          <div class="widget-card" style="margin-bottom: 20px;">
+            <h2 class="widget-title">🎀 Sticker Rewards Collection</h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Earn adorable stickers as you hit daily streaks and complete focus sessions!</p>
+            <div class="stickers-grid" id="stickers-collection-grid"></div>
+          </div>
+        </div>
+
+        <!-- VIEW: AI PDF SUMMARIZER -->
+        <div id="view-pdf" class="view-section" style="display: none;">
+          <div class="widget-card">
+            <h2 class="widget-title">📄 AI PDF Summarizer & Task Generator</h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+              Upload any PDF (syllabus, lecture slides, meeting notes) to automatically summarize key points and convert them into actionable to-do tasks!
+            </p>
+            <div id="pdf-drop-zone" style="border: 2px dashed var(--accent-color); border-radius: 20px; padding: 40px; text-align: center; cursor: pointer; background: var(--bg-secondary);">
+              <span style="font-size: 42px;">📁</span>
+              <div style="font-weight: 700; font-size: 1rem; margin-top: 8px;">Drag and drop your PDF file here</div>
+              <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">or click to browse files</div>
+              <input type="file" id="pdf-file-input" accept=".pdf" style="display: none;" />
+            </div>
+            <div id="pdf-status-text" style="text-align: center; font-weight: 700; color: var(--accent-hover); margin-top: 14px; display: none;"></div>
+            <div id="pdf-summary-result" style="display: none; background: var(--bg-secondary); border-radius: 16px; padding: 18px; margin-top: 16px;"></div>
+            <button class="btn-primary bloom-hover" id="pdf-add-tasks-btn" style="display: none; width: 100%; margin-top: 14px; justify-content: center;">
+              Add Extracted Tasks to My List 🌸
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Right Column: Widgets -->
+      <aside class="widgets-right-column">
+        
+        <!-- Mascot Dock -->
+        <div class="mascot-dock-container" id="mascot-dock" title="Click for sweet cheering!">
+          <div class="mascot-svg-wrap" id="mascot-avatar"></div>
+          <div class="mascot-speech-bubble" id="mascot-bubble">
+            I'm here cheering for you! 🌸
+          </div>
+        </div>
+
+        <!-- Mini Pomodoro Widget -->
+        <div class="widget-card">
+          <div class="widget-header">
+            <h2 class="widget-title">⏱️ Pomodoro</h2>
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">25/5 MIN</span>
+          </div>
+          <div class="pomodoro-display">
+            <div class="pomodoro-time" id="widget-pomodoro-time">25:00</div>
+          </div>
+          <div style="display: flex; gap: 8px; justify-content: center;">
+            <button class="btn-primary bloom-hover" id="widget-pomo-quick-start" style="padding: 6px 16px; font-size: 0.85rem;">Start 🎯</button>
+          </div>
+        </div>
+
+        <!-- Habit Tracker Widget -->
+        <div class="widget-card">
+          <div class="widget-header">
+            <h2 class="widget-title">✨ Daily Habits</h2>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Today</span>
+          </div>
+          <div id="habits-widget-container"></div>
+        </div>
+
+        <!-- Motivational Quote Widget -->
+        <div class="widget-card">
+          <div class="quote-card">
+            <button class="quote-refresh-btn" id="refresh-quote-btn" title="New Quote">🔄</button>
+            <p id="daily-quote-text">“Bloom with grace wherever life plants you.” 🌸</p>
+          </div>
+        </div>
+
+        <!-- Countdowns Widget -->
+        <div class="widget-card">
+          <div class="widget-header">
+            <h2 class="widget-title">🎉 Countdowns</h2>
+          </div>
+          <div id="countdowns-widget-container"></div>
+        </div>
+
+      </aside>
+
+    </div>
+
+  </main>
+
+  <!-- MODAL: SETTINGS & PREFERENCES -->
+  <div class="modal-overlay" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="settings-title">⚙️ Preferences & Look</h2>
+        <button class="modal-close-btn" aria-label="Close settings">✕</button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="setting-theme-select">Pastel Theme Preset</label>
+        <select class="form-select" id="setting-theme-select">
+          <option value="pink">🌸 Cherry Blossom (Pink)</option>
+          <option value="yellow">🌼 Sunny Daisy (Yellow)</option>
+          <option value="blue">🌊 Forget-Me-Not (Blue)</option>
+          <option value="green">🍀 Lucky Clover (Green)</option>
+          <option value="lavender">💜 Sweet Lavender (Purple)</option>
+          <option value="dark">🌙 Pastel Midnight (Dark Mode)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="setting-accent-picker">Custom Accent Color</label>
+        <input type="color" id="setting-accent-picker" value="#f472b6" style="width: 100%; height: 38px; border: none; border-radius: 10px; cursor: pointer;" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="setting-cursor-select">Flower Cursor</label>
+        <select class="form-select" id="setting-cursor-select">
+          <option value="cherry">🌸 Pink Cherry Blossom</option>
+          <option value="daisy">🌼 Yellow Daisy</option>
+          <option value="forgetmenot">💙 Blue Forget-Me-Not</option>
+          <option value="clover">🍀 Green Clover Blossom</option>
+          <option value="lavender">💜 Lavender Sprig</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="setting-font-select">Cute Font Choice</label>
+        <select class="form-select" id="setting-font-select">
+          <option value="rounded">Rounded (Quicksand)</option>
+          <option value="handwritten">Handwritten (Patrick Hand)</option>
+          <option value="bubbly">Bubbly (Fredoka)</option>
+        </select>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label class="form-label" for="setting-size-select">Text Size</label>
+          <select class="form-select" id="setting-size-select">
+            <option value="sm">Small</option>
+            <option value="md">Medium</option>
+            <option value="lg">Large</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="setting-layout-select">Layout Density</label>
+          <select class="form-select" id="setting-layout-select">
+            <option value="comfortable">Comfortable</option>
+            <option value="compact">Compact</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label class="form-label" for="setting-shape-select">Checkbox Shape</label>
+          <select class="form-select" id="setting-shape-select">
+            <option value="flower">✿ Flower</option>
+            <option value="heart">♥ Heart</option>
+            <option value="star">★ Star</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="setting-season-select">Theme Season</label>
+          <select class="form-select" id="setting-season-select">
+            <option value="spring">🌸 Spring (Sakura)</option>
+            <option value="summer">🌻 Summer (Sunflowers)</option>
+            <option value="autumn">🍁 Autumn (Leaves)</option>
+            <option value="winter">❄️ Winter (Snowflakes)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; cursor: pointer;">
+          <input type="checkbox" id="setting-petals-toggle" checked />
+          <span>Floating Background Petals / Sparkles</span>
+        </label>
+      </div>
+
+      <div class="form-group" style="border-top: 1px dashed var(--card-border); padding-top: 14px;">
+        <label class="form-label">Custom Wallpaper Background</label>
+        <input type="file" id="wallpaper-upload-input" accept="image/*" class="form-input" />
+        <button class="bulk-btn" id="clear-wallpaper-btn" style="margin-top: 6px;">Remove Wallpaper</button>
+      </div>
+
+      <div class="form-group" style="border-top: 1px dashed var(--card-border); padding-top: 14px;">
+        <label class="form-label">Data Backup & Export</label>
+        <div style="display: flex; gap: 8px;">
+          <button class="bulk-btn" id="export-json-btn">Export JSON</button>
+          <button class="bulk-btn" id="export-csv-btn">Export CSV</button>
+        </div>
+        <div style="margin-top: 8px;">
+          <label class="form-label" style="font-size: 0.8rem;">Import from JSON:</label>
+          <input type="file" id="import-file-input" accept=".json" class="form-input" />
+        </div>
+      </div>
+
+      <button class="btn-primary bloom-hover" id="save-settings-btn" style="width: 100%; justify-content: center; margin-top: 16px;">
+        Save Preferences ✨
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: SHARE LIST -->
+  <div class="modal-overlay" id="share-modal" role="dialog" aria-modal="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">🔗 Share Your To-Do List</h2>
+        <button class="modal-close-btn">✕</button>
+      </div>
+      <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px;">
+        Generate a cute read-only link to share with friends, or print as a clean aesthetic checklist.
+      </p>
+      <button class="btn-primary bloom-hover" id="share-generate-btn" style="width: 100%; justify-content: center; margin-bottom: 12px;">
+        Generate Share Link 🌸
+      </button>
+      <div id="share-link-row" style="display: none; gap: 8px; margin-bottom: 14px;">
+        <input type="text" id="share-link-input" class="form-input" readonly />
+        <button class="bulk-btn" id="share-copy-btn">Copy</button>
+      </div>
+      <button class="bulk-btn" id="share-print-btn" style="width: 100%; padding: 10px;">
+        🖨️ Print / Save as PDF Checklist
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: KEYBOARD SHORTCUTS -->
+  <div class="modal-overlay" id="shortcuts-modal" role="dialog" aria-modal="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">⌨️ Keyboard Shortcuts</h2>
+        <button class="modal-close-btn">✕</button>
+      </div>
+      <table style="width: 100%; font-size: 0.9rem; border-collapse: collapse;">
+        <tr style="border-bottom: 1px dashed var(--card-border);">
+          <td style="padding: 8px 0;"><b>N</b></td>
+          <td style="color: var(--text-muted);">Quick-add new task</td>
+        </tr>
+        <tr style="border-bottom: 1px dashed var(--card-border);">
+          <td style="padding: 8px 0;"><b>/</b></td>
+          <td style="color: var(--text-muted);">Search tasks</td>
+        </tr>
+        <tr style="border-bottom: 1px dashed var(--card-border);">
+          <td style="padding: 8px 0;"><b>Ctrl + Z</b></td>
+          <td style="color: var(--text-muted);">Undo last delete</td>
+        </tr>
+        <tr style="border-bottom: 1px dashed var(--card-border);">
+          <td style="padding: 8px 0;"><b>Alt + L / Esc</b></td>
+          <td style="color: var(--text-muted);">Panic lock screen</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0;"><b>?</b></td>
+          <td style="color: var(--text-muted);">Open this shortcuts help</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODAL: PASSWORD LOCK SCREEN -->
+  <div class="lock-screen-modal" id="lock-screen-modal" style="display: none;">
+    <div class="lock-card">
+      <span style="font-size: 48px;">🔒</span>
+      <h2 style="margin: 10px 0 6px 0; font-size: 1.3rem;">App Locked</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+        Please enter your password to unlock your lovely to-dos.
+      </p>
+      <input type="password" id="lock-password-input" class="form-input" placeholder="Password" style="text-align: center; margin-bottom: 8px;" />
+      <div id="lock-hint-text" style="font-size: 0.8rem; color: var(--accent-hover); margin-bottom: 12px;"></div>
+      <div id="lock-error-text" style="font-size: 0.82rem; color: #e11d48; margin-bottom: 10px;"></div>
+      <button class="btn-primary bloom-hover" id="lock-submit-btn" style="width: 100%; justify-content: center;">
+        Unlock 🌸
+      </button>
+    </div>
+  </div>
+
+  <!-- FULLSCREEN FOCUS MODE ZEN OVERLAY -->
+  <div class="focus-mode-overlay" id="focus-mode-overlay">
+    <div style="font-size: 40px; margin-bottom: 10px;">🍵</div>
+    <div style="font-size: 1rem; color: var(--accent-hover); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;">Deep Focus Mode</div>
+    <div class="focus-task-title" id="focus-task-title">Current Task Title</div>
+    <div style="font-size: 4.5rem; font-weight: 700; margin-bottom: 30px;" id="focus-timer-clock">25:00</div>
+    <div style="display: flex; gap: 14px;">
+      <button class="btn-primary bloom-hover" id="focus-done-btn" style="padding: 12px 28px; font-size: 1rem;">Complete Task ✓</button>
+      <button class="bulk-btn" id="focus-close-btn" style="padding: 12px 22px;">Exit Focus</button>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <!-- Script Modules -->
+  <script src="/static/js/sound.js"></script>
+  <script src="/static/js/flower-cursor.js"></script>
+  <script src="/static/js/smart-parser.js"></script>
+  <script src="/static/js/mascot.js"></script>
+  <script src="/static/js/garden.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
