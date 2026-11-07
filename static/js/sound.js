@@ -108,3 +108,4 @@ class PastelAudio {
 }
 
 window.pastelAudio = new PastelAudio();
+

@@ -176,3 +176,4 @@ body.has-custom-wallpaper::before {
 [data-theme="dark"].has-custom-wallpaper::before {
   background: rgba(21, 19, 32, 0.88);
 }
+

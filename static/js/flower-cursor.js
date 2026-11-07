@@ -208,3 +208,4 @@ class FlowerCursorManager {
 }
 
 window.flowerCursor = new FlowerCursorManager();
+

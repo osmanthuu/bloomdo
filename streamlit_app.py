@@ -64,3 +64,4 @@ st.markdown("""
   <a href="https://github.com" target="_blank" style="color: #ec4899; text-decoration: underline;">Deploy on Streamlit Community Cloud</a>
 </div>
 """, unsafe_allow_html=True)
+

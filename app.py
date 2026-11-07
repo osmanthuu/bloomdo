@@ -162,11 +162,11 @@ def init_db():
         ]
         cursor.executemany("INSERT INTO lists (name, icon, is_locked) VALUES (?, ?, ?)", default_lists)
 
-    # Seed Stickers if empty
+    # Stickers definitions (all locked by default until unlocked by user)
     stk_check = cursor.execute("SELECT COUNT(*) FROM stickers").fetchone()[0]
     if stk_check == 0:
         default_stickers = [
-            ('first_bloom', 'First Bloom', '🌸', 'Completed your very first task!', datetime.utcnow().isoformat()),
+            ('first_bloom', 'First Bloom', '🌸', 'Completed your very first task!', None),
             ('streak_3', 'Sprout Master', '🌱', 'Achieved a 3-day completion streak!', None),
             ('streak_7', 'Flower Queen', '🌺', 'Achieved a 7-day completion streak!', None),
             ('night_owl', 'Moonlit Petal', '🌙', 'Finished a task after 9 PM', None),
@@ -176,79 +176,6 @@ def init_db():
             ('tidy_bee', 'Busy Bee', '🐝', 'Cleared all tasks for the day', None)
         ]
         cursor.executemany("INSERT INTO stickers (sticker_key, name, emoji, description, unlocked_at) VALUES (?, ?, ?, ?, ?)", default_stickers)
-
-    # Seed Tasks if empty
-    task_check = cursor.execute("SELECT COUNT(*) FROM tasks").fetchone()[0]
-    if task_check == 0:
-        today_str = date.today().isoformat()
-        tomorrow_str = (date.today() + timedelta(days=1)).isoformat()
-
-        cursor.execute('''
-            INSERT INTO tasks (title, notes, due_date, due_time, priority, category, list_name, is_pinned, is_completed, time_estimate_minutes, order_index)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', ("🌸 Welcome to your Cute Pastel To-Do list!", "Explore themes, flower cursors, drag & drop widgets, and watch your cute mascot cheer!", today_str, "12:00", "high", "Personal", "Today", 1, 0, 15, 0))
-        t1_id = cursor.lastrowid
-
-        cursor.executemany("INSERT INTO subtasks (task_id, title, is_completed, order_index) VALUES (?, ?, ?, ?)", [
-            (t1_id, "Check off this subtask to hear the sweet chime 🎵", 0, 0),
-            (t1_id, "Switch to lavender or dark pastel theme in top menu 💜", 0, 1),
-            (t1_id, "Hover over buttons to watch the flower cursor bloom 🌼", 0, 2),
-            (t1_id, "Plant your first flower in the Garden tab 🌱", 0, 3)
-        ])
-
-        cursor.execute('''
-            INSERT INTO tasks (title, notes, due_date, due_time, priority, category, list_name, is_pinned, is_completed, time_estimate_minutes, order_index)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', ("🍵 Make strawberry matcha & do morning journaling", "Add warm milk foam and 2 spoons of honey ✨", today_str, "09:30", "high", "Self-Care", "Today", 0, 0, 20, 1))
-
-        cursor.execute('''
-            INSERT INTO tasks (title, notes, due_date, due_time, priority, category, list_name, is_pinned, is_completed, time_estimate_minutes, order_index)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', ("📚 Study session: Review summary notes & flashcards", "Use the Pomodoro timer in the widget or focus mode!", today_str, "16:00", "medium", "School", "Today", 0, 0, 45, 2))
-
-        cursor.execute('''
-            INSERT INTO tasks (title, notes, due_date, due_time, priority, category, list_name, is_pinned, is_completed, time_estimate_minutes, order_index)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', ("🛒 Grocery run: strawberries, bakery buns & fresh lavender", "Check bakery corner for fresh croissants", tomorrow_str, "18:00", "low", "Home", "This Week", 0, 0, 30, 3))
-
-    # Seed Habits if empty
-    habit_check = cursor.execute("SELECT COUNT(*) FROM habits").fetchone()[0]
-    if habit_check == 0:
-        today_str = date.today().isoformat()
-        sample_logs = json.dumps({today_str: True})
-        default_habits = [
-            ("Drink 8 glasses of water", "💧", 7, sample_logs),
-            ("Read 15 minutes of a cute book", "📖", 7, sample_logs),
-            ("10-minute mindful stretch", "🧘‍♀️", 7, "{}"),
-            ("Water the cozy house plants", "🪴", 7, sample_logs)
-        ]
-        cursor.executemany("INSERT INTO habits (name, icon, target_days, logs_json) VALUES (?, ?, ?, ?)", default_habits)
-
-    # Seed Goals if empty
-    goal_check = cursor.execute("SELECT COUNT(*) FROM goals").fetchone()[0]
-    if goal_check == 0:
-        cursor.execute("INSERT INTO goals (title, category, target_date, notes) VALUES (?, ?, ?, ?)",
-                       ("🌸 Complete Semester with Straight A's", "School", (date.today() + timedelta(days=60)).isoformat(), "Daily focus study sessions"))
-        cursor.execute("INSERT INTO goals (title, category, target_date, notes) VALUES (?, ?, ?, ?)",
-                       ("✨ Read 12 cozy novels this year", "Self-Care", (date.today() + timedelta(days=120)).isoformat(), "Track reading time & notes"))
-
-    # Seed Countdowns if empty
-    cd_check = cursor.execute("SELECT COUNT(*) FROM countdowns").fetchone()[0]
-    if cd_check == 0:
-        cursor.execute("INSERT INTO countdowns (title, target_date, emoji, note) VALUES (?, ?, ?, ?)",
-                       ("🎂 Birthday Celebration", (date.today() + timedelta(days=25)).isoformat(), "🎂", "Bake strawberry shortcake!"))
-        cursor.execute("INSERT INTO countdowns (title, target_date, emoji, note) VALUES (?, ?, ?, ?)",
-                       ("✈️ Weekend Cabin Getaway", (date.today() + timedelta(days=14)).isoformat(), "🌸", "Cozy cabin by the pine lake"))
-
-    # Seed Initial Flowers in Garden
-    flower_check = cursor.execute("SELECT COUNT(*) FROM garden_flowers").fetchone()[0]
-    if flower_check == 0:
-        cursor.execute("INSERT INTO garden_flowers (task_id, flower_type, color, bloom_date, x_pct, y_pct) VALUES (?, ?, ?, ?, ?, ?)",
-                       (None, "cherry", "#f472b6", date.today().isoformat(), 30.0, 65.0))
-        cursor.execute("INSERT INTO garden_flowers (task_id, flower_type, color, bloom_date, x_pct, y_pct) VALUES (?, ?, ?, ?, ?, ?)",
-                       (None, "daisy", "#facc15", date.today().isoformat(), 55.0, 72.0))
-        cursor.execute("INSERT INTO garden_flowers (task_id, flower_type, color, bloom_date, x_pct, y_pct) VALUES (?, ?, ?, ?, ?, ?)",
-                       (None, "lavender", "#c084fc", date.today().isoformat(), 75.0, 60.0))
 
     conn.commit()
     conn.close()

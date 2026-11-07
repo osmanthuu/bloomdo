@@ -1296,6 +1296,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     initPomodoroControls();
     initSettingsForm();
+    initEditTaskModal();
     initPdfUpload();
     initLockScreenForm();
   }
@@ -1383,6 +1384,87 @@ document.addEventListener('DOMContentLoaded', async () => {
     showToast(`Bulk ${action} completed! 🌸`);
     await loadTasks();
     renderTasksList();
+  }
+
+  // --- EDIT TASK MODAL ---
+  function openEditTaskModal(task) {
+    const modal = document.getElementById('edit-task-modal');
+    if (!modal) return;
+
+    document.getElementById('edit-task-id').value = task.id;
+    document.getElementById('edit-task-title-input').value = task.title || '';
+    document.getElementById('edit-task-notes-input').value = task.notes || '';
+    document.getElementById('edit-task-due-date').value = task.due_date || '';
+    document.getElementById('edit-task-due-time').value = task.due_time || '';
+    document.getElementById('edit-task-priority').value = task.priority || 'medium';
+    document.getElementById('edit-task-estimate').value = task.time_estimate_minutes || 0;
+    document.getElementById('edit-task-recurring').value = task.recurring || 'none';
+
+    // Populate category dropdown
+    const catSelect = document.getElementById('edit-task-category');
+    if (catSelect) {
+      catSelect.innerHTML = '';
+      state.categories.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.name;
+        opt.innerText = c.name;
+        if (c.name === task.category) opt.selected = true;
+        catSelect.appendChild(opt);
+      });
+    }
+
+    // Populate list dropdown
+    const listSelect = document.getElementById('edit-task-list');
+    if (listSelect) {
+      listSelect.innerHTML = '';
+      state.lists.forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l.name;
+        opt.innerText = `${l.icon} ${l.name}`;
+        if (l.name === task.list_name) opt.selected = true;
+        listSelect.appendChild(opt);
+      });
+    }
+
+    modal.classList.add('open');
+  }
+
+  function initEditTaskModal() {
+    document.getElementById('save-task-edit-btn')?.addEventListener('click', async () => {
+      const tid = document.getElementById('edit-task-id').value;
+      const title = document.getElementById('edit-task-title-input').value.trim();
+      if (!title) {
+        showToast('Task title is required! 🌸');
+        return;
+      }
+      const notes = document.getElementById('edit-task-notes-input').value.trim();
+      const due_date = document.getElementById('edit-task-due-date').value;
+      const due_time = document.getElementById('edit-task-due-time').value;
+      const priority = document.getElementById('edit-task-priority').value;
+      const time_estimate_minutes = parseInt(document.getElementById('edit-task-estimate').value || '0', 10);
+      const category = document.getElementById('edit-task-category').value;
+      const list_name = document.getElementById('edit-task-list').value;
+      const recurring = document.getElementById('edit-task-recurring').value;
+
+      try {
+        const res = await fetch(`/api/tasks/${tid}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title, notes, due_date, due_time, priority, time_estimate_minutes, category, list_name, recurring
+          })
+        });
+        if (res.ok) {
+          document.getElementById('edit-task-modal').classList.remove('open');
+          showToast('Task updated successfully! 🌸');
+          await loadTasks();
+          renderTasksList();
+          renderEatTheFrog();
+        }
+      } catch (e) {
+        console.log('Error updating task:', e);
+      }
+    });
   }
 
   // --- SETTINGS MODAL & FORM ---
@@ -1715,3 +1797,4 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Run initialization
   await init();
 });
+

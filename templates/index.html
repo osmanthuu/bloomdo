@@ -310,6 +310,79 @@
 
   </main>
 
+  <!-- MODAL: EDIT TASK -->
+  <div class="modal-overlay" id="edit-task-modal" role="dialog" aria-modal="true" aria-labelledby="edit-task-title">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="edit-task-title">✏️ Edit Task</h2>
+        <button class="modal-close-btn" aria-label="Close edit task">✕</button>
+      </div>
+
+      <input type="hidden" id="edit-task-id" />
+
+      <div class="form-group">
+        <label class="form-label" for="edit-task-title-input">Task Title</label>
+        <input type="text" id="edit-task-title-input" class="form-input" placeholder="What would you like to do?" required />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="edit-task-notes-input">Notes & Details</label>
+        <textarea id="edit-task-notes-input" class="form-textarea" rows="2" placeholder="Add cute notes, links, or instructions..."></textarea>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label class="form-label" for="edit-task-due-date">Due Date</label>
+          <input type="date" id="edit-task-due-date" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="edit-task-due-time">Due Time</label>
+          <input type="time" id="edit-task-due-time" class="form-input" />
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label class="form-label" for="edit-task-priority">Priority</label>
+          <select id="edit-task-priority" class="form-select">
+            <option value="low">🌱 Low</option>
+            <option value="medium">🌼 Medium</option>
+            <option value="high">🌸 High</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="edit-task-estimate">Estimate (minutes)</label>
+          <input type="number" id="edit-task-estimate" class="form-input" min="0" step="5" placeholder="e.g. 25" />
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label class="form-label" for="edit-task-category">Category</label>
+          <select id="edit-task-category" class="form-select"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="edit-task-list">List</label>
+          <select id="edit-task-list" class="form-select"></select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="edit-task-recurring">Recurring Repeat</label>
+        <select id="edit-task-recurring" class="form-select">
+          <option value="none">No Repeat</option>
+          <option value="daily">🔄 Daily</option>
+          <option value="weekly">🔄 Weekly</option>
+          <option value="monthly">🔄 Monthly</option>
+        </select>
+      </div>
+
+      <button class="btn-primary bloom-hover" id="save-task-edit-btn" style="width: 100%; justify-content: center; margin-top: 14px;">
+        Save Changes ✨
+      </button>
+    </div>
+  </div>
+
   <!-- MODAL: SETTINGS & PREFERENCES -->
   <div class="modal-overlay" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
     <div class="modal-content">
@@ -520,3 +593,4 @@
   <script src="/static/js/app.js"></script>
 </body>
 </html>
+

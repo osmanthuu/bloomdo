@@ -130,3 +130,4 @@ class SmartQuickAddParser {
 }
 
 window.SmartQuickAddParser = SmartQuickAddParser;
+
