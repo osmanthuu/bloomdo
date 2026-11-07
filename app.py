@@ -3,10 +3,11 @@ import sqlite3
 import json
 import uuid
 import smtplib
+from functools import wraps
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, date, timedelta
-from flask import Flask, render_template, request, jsonify, send_from_directory, Response
+from flask import Flask, render_template, request, jsonify, send_from_directory, Response, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 import pypdf
@@ -31,8 +32,16 @@ def init_db():
     cursor = conn.cursor()
 
     cursor.executescript('''
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL COLLATE NOCASE,
+        password_hash TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL DEFAULT 1,
         title TEXT NOT NULL,
         notes TEXT DEFAULT '',
         due_date TEXT DEFAULT '',
@@ -49,7 +58,8 @@ def init_db():
         time_estimate_minutes INTEGER DEFAULT 0,
         time_spent_seconds INTEGER DEFAULT 0,
         order_index INTEGER DEFAULT 0,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
     );
 
     CREATE TABLE IF NOT EXISTS subtasks (
@@ -63,19 +73,22 @@ def init_db():
 
     CREATE TABLE IF NOT EXISTS categories (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE NOT NULL,
+        user_id INTEGER NOT NULL DEFAULT 1,
+        name TEXT NOT NULL,
         color TEXT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS lists (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE NOT NULL,
+        user_id INTEGER NOT NULL DEFAULT 1,
+        name TEXT NOT NULL,
         icon TEXT DEFAULT '🌸',
         is_locked INTEGER DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS habits (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL DEFAULT 1,
         name TEXT NOT NULL,
         icon TEXT DEFAULT '✨',
         target_days INTEGER DEFAULT 7,
@@ -85,6 +98,7 @@ def init_db():
 
     CREATE TABLE IF NOT EXISTS goals (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL DEFAULT 1,
         title TEXT NOT NULL,
         category TEXT DEFAULT 'General',
         target_date TEXT DEFAULT '',
@@ -94,6 +108,7 @@ def init_db():
 
     CREATE TABLE IF NOT EXISTS countdowns (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL DEFAULT 1,
         title TEXT NOT NULL,
         target_date TEXT NOT NULL,
         emoji TEXT DEFAULT '🎉',
@@ -102,6 +117,7 @@ def init_db():
 
     CREATE TABLE IF NOT EXISTS garden_flowers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL DEFAULT 1,
         task_id INTEGER,
         flower_type TEXT NOT NULL,
         color TEXT NOT NULL,
@@ -121,14 +137,17 @@ def init_db():
 
     CREATE TABLE IF NOT EXISTS mood_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date_str TEXT UNIQUE NOT NULL,
+        user_id INTEGER NOT NULL DEFAULT 1,
+        date_str TEXT NOT NULL,
         mood_emoji TEXT NOT NULL,
         note TEXT DEFAULT ''
     );
 
     CREATE TABLE IF NOT EXISTS settings (
-        key TEXT PRIMARY KEY,
-        value TEXT
+        user_id INTEGER NOT NULL DEFAULT 1,
+        key TEXT NOT NULL,
+        value TEXT,
+        PRIMARY KEY (user_id, key)
     );
 
     CREATE TABLE IF NOT EXISTS shared_lists (
@@ -139,30 +158,7 @@ def init_db():
     );
     ''')
 
-    # Seed Default Categories if empty
-    cat_check = cursor.execute("SELECT COUNT(*) FROM categories").fetchone()[0]
-    if cat_check == 0:
-        default_cats = [
-            ('Personal', '#fbcfe8'),
-            ('School', '#fef08a'),
-            ('Home', '#bbf7d0'),
-            ('Work', '#bfdbfe'),
-            ('Self-Care', '#e9d5ff')
-        ]
-        cursor.executemany("INSERT INTO categories (name, color) VALUES (?, ?)", default_cats)
-
-    # Seed Default Lists if empty
-    list_check = cursor.execute("SELECT COUNT(*) FROM lists").fetchone()[0]
-    if list_check == 0:
-        default_lists = [
-            ('Today', '🌸', 0),
-            ('This Week', '📅', 0),
-            ('Someday', '☁️', 0),
-            ('Secret Diary', '🔒', 1)
-        ]
-        cursor.executemany("INSERT INTO lists (name, icon, is_locked) VALUES (?, ?, ?)", default_lists)
-
-    # Stickers definitions (all locked by default until unlocked by user)
+    # Seed Default Stickers Catalog (locked by default)
     stk_check = cursor.execute("SELECT COUNT(*) FROM stickers").fetchone()[0]
     if stk_check == 0:
         default_stickers = [
@@ -182,7 +178,7 @@ def init_db():
 
 init_db()
 
-# --- HELPER FUNCTIONS ---
+# --- HELPER FUNCTIONS & AUTH DECORATOR ---
 def query_db(query, args=(), one=False):
     conn = get_db()
     cur = conn.cursor()
@@ -201,6 +197,41 @@ def execute_db(query, args=()):
     conn.close()
     return last_id
 
+def get_current_user_id():
+    return session.get('user_id')
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not get_current_user_id():
+            return jsonify({'error': 'Authentication required. Please log in.', 'authenticated': False}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+def seed_defaults_for_user(user_id):
+    conn = get_db()
+    cur = conn.cursor()
+    # Default Categories
+    default_cats = [
+        (user_id, 'Personal', '#fbcfe8'),
+        (user_id, 'School', '#fef08a'),
+        (user_id, 'Home', '#bbf7d0'),
+        (user_id, 'Work', '#bfdbfe'),
+        (user_id, 'Self-Care', '#e9d5ff')
+    ]
+    cur.executemany("INSERT INTO categories (user_id, name, color) VALUES (?, ?, ?)", default_cats)
+
+    # Default Lists
+    default_lists = [
+        (user_id, 'Today', '🌸', 0),
+        (user_id, 'This Week', '📅', 0),
+        (user_id, 'Someday', '☁️', 0),
+        (user_id, 'Secret Diary', '🔒', 1)
+    ]
+    cur.executemany("INSERT INTO lists (user_id, name, icon, is_locked) VALUES (?, ?, ?, ?)", default_lists)
+    conn.commit()
+    conn.close()
+
 # --- FRONTEND ROUTING & PWA ---
 @app.route('/')
 def index():
@@ -214,16 +245,92 @@ def manifest():
 def service_worker():
     return send_from_directory('static', 'sw.js', mimetype='application/javascript')
 
+# --- AUTH & SECURITY API ---
+@app.route('/api/auth/status', methods=['GET'])
+def auth_status():
+    user_count = query_db("SELECT COUNT(*) FROM users", one=True)[0]
+    uid = get_current_user_id()
+    user = query_db("SELECT id, username FROM users WHERE id = ?", (uid,), one=True) if uid else None
+
+    return jsonify({
+        'has_users': user_count > 0,
+        'is_authenticated': bool(user),
+        'username': user['username'] if user else None,
+        'user_id': user['id'] if user else None
+    })
+
+@app.route('/api/auth/register', methods=['POST'])
+def auth_register():
+    data = request.json or {}
+    username = data.get('username', '').strip()
+    password = data.get('password', '').strip()
+
+    if not username or len(username) < 3:
+        return jsonify({'error': 'Username must be at least 3 characters long.'}), 400
+
+    if not password or len(password) < 4:
+        return jsonify({'error': 'Password must be at least 4 characters long.'}), 400
+
+    existing = query_db("SELECT id FROM users WHERE username = ? COLLATE NOCASE", (username,), one=True)
+    if existing:
+        return jsonify({'error': 'Username is already taken. Please choose another cute name! 🌸'}), 409
+
+    hashed = generate_password_hash(password)
+    user_id = execute_db("INSERT INTO users (username, password_hash) VALUES (?, ?)", (username, hashed))
+
+    # Initialize categories & lists for this new user
+    seed_defaults_for_user(user_id)
+
+    # Set Session
+    session['user_id'] = user_id
+    session['username'] = username
+
+    return jsonify({
+        'success': True,
+        'username': username,
+        'user_id': user_id,
+        'message': f'Welcome to Pastel Blooms, {username}! 🌸'
+    }), 201
+
+@app.route('/api/auth/login', methods=['POST'])
+def auth_login():
+    data = request.json or {}
+    username = data.get('username', '').strip()
+    password = data.get('password', '').strip()
+
+    if not username or not password:
+        return jsonify({'error': 'Please enter both username and password.'}), 400
+
+    user = query_db("SELECT * FROM users WHERE username = ? COLLATE NOCASE", (username,), one=True)
+    if not user or not check_password_hash(user['password_hash'], password):
+        return jsonify({'success': False, 'error': 'Invalid username or password.'}), 401
+
+    session['user_id'] = user['id']
+    session['username'] = user['username']
+
+    return jsonify({
+        'success': True,
+        'username': user['username'],
+        'user_id': user['id']
+    })
+
+@app.route('/api/auth/logout', methods=['POST'])
+def auth_logout():
+    session.clear()
+    return jsonify({'success': True, 'message': 'Logged out safely! 🌸'})
+
 # --- TASKS API ---
 @app.route('/api/tasks', methods=['GET'])
+@login_required
 def get_tasks():
+    user_id = get_current_user_id()
     list_name = request.args.get('list')
     category = request.args.get('category')
     search = request.args.get('search')
-    filter_status = request.args.get('status', 'all')  # all, active, completed, archived
+    filter_status = request.args.get('status', 'all')
 
-    query = "SELECT * FROM tasks WHERE 1=1"
-    params = []
+    query = "SELECT * FROM tasks WHERE user_id = ?"
+    params = [user_id]
 
     if filter_status == 'archived':
         query += " AND is_archived = 1"
@@ -256,7 +363,6 @@ def get_tasks():
     cur = conn.cursor()
     for row in tasks:
         t = dict(row)
-        # Fetch subtasks
         subtasks_rows = cur.execute(
             "SELECT * FROM subtasks WHERE task_id = ? ORDER BY order_index ASC, id ASC", (t['id'],)
         ).fetchall()
@@ -267,7 +373,9 @@ def get_tasks():
     return jsonify(result)
 
 @app.route('/api/tasks', methods=['POST'])
+@login_required
 def create_task():
+    user_id = get_current_user_id()
     data = request.json or {}
     title = data.get('title', '').strip()
     if not title:
@@ -286,10 +394,10 @@ def create_task():
     order_index = int(data.get('order_index', 0) or 0)
 
     task_id = execute_db('''
-        INSERT INTO tasks (title, notes, due_date, due_time, priority, category, list_name, is_pinned,
+        INSERT INTO tasks (user_id, title, notes, due_date, due_time, priority, category, list_name, is_pinned,
                            recurring, blocked_by_id, time_estimate_minutes, order_index)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (title, notes, due_date, due_time, priority, category, list_name, is_pinned,
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (user_id, title, notes, due_date, due_time, priority, category, list_name, is_pinned,
           recurring, blocked_by_id, time_estimate_minutes, order_index))
 
     # Add subtasks if provided
@@ -300,14 +408,16 @@ def create_task():
             execute_db('INSERT INTO subtasks (task_id, title, is_completed, order_index) VALUES (?, ?, ?, ?)',
                        (task_id, s_title.strip(), 0, idx))
 
-    created = query_db("SELECT * FROM tasks WHERE id = ?", (task_id,), one=True)
+    created = query_db("SELECT * FROM tasks WHERE id = ? AND user_id = ?", (task_id, user_id), one=True)
     res = dict(created)
     res['subtasks'] = [dict(s) for s in query_db("SELECT * FROM subtasks WHERE task_id = ?", (task_id,))]
     return jsonify(res), 201
 
 @app.route('/api/tasks/<int:task_id>', methods=['GET'])
+@login_required
 def get_single_task(task_id):
-    task = query_db("SELECT * FROM tasks WHERE id = ?", (task_id,), one=True)
+    user_id = get_current_user_id()
+    task = query_db("SELECT * FROM tasks WHERE id = ? AND user_id = ?", (task_id, user_id), one=True)
     if not task:
         return jsonify({'error': 'Task not found'}), 404
     res = dict(task)
@@ -315,8 +425,10 @@ def get_single_task(task_id):
     return jsonify(res)
 
 @app.route('/api/tasks/<int:task_id>', methods=['PUT', 'PATCH'])
+@login_required
 def update_task(task_id):
-    task = query_db("SELECT * FROM tasks WHERE id = ?", (task_id,), one=True)
+    user_id = get_current_user_id()
+    task = query_db("SELECT * FROM tasks WHERE id = ? AND user_id = ?", (task_id, user_id), one=True)
     if not task:
         return jsonify({'error': 'Task not found'}), 404
 
@@ -352,10 +464,10 @@ def update_task(task_id):
         UPDATE tasks SET title=?, notes=?, due_date=?, due_time=?, priority=?, category=?, list_name=?,
                          is_pinned=?, is_completed=?, completed_at=?, is_archived=?, recurring=?,
                          blocked_by_id=?, time_estimate_minutes=?, time_spent_seconds=?, order_index=?
-        WHERE id=?
+        WHERE id=? AND user_id=?
     ''', (title, notes, due_date, due_time, priority, category, list_name, is_pinned,
           is_completed, completed_at, is_archived, recurring, blocked_by_id,
-          time_estimate_minutes, time_spent_seconds, order_index, task_id))
+          time_estimate_minutes, time_spent_seconds, order_index, task_id, user_id))
 
     # If subtasks array provided, replace
     if 'subtasks' in data:
@@ -367,7 +479,7 @@ def update_task(task_id):
                 execute_db("INSERT INTO subtasks (task_id, title, is_completed, order_index) VALUES (?, ?, ?, ?)",
                            (task_id, s_title, s_done, idx))
 
-    # If completed and has recurrence, generate the next task
+    # If completed and recurring, generate next
     if just_completed and recurring and recurring != 'none':
         try:
             curr_due = datetime.strptime(due_date, "%Y-%m-%d").date() if due_date else date.today()
@@ -381,17 +493,16 @@ def update_task(task_id):
                 next_due = curr_due + timedelta(days=1)
 
             execute_db('''
-                INSERT INTO tasks (title, notes, due_date, due_time, priority, category, list_name, recurring, time_estimate_minutes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (title, notes, next_due.isoformat(), due_time, priority, category, list_name, recurring, time_estimate_minutes))
+                INSERT INTO tasks (user_id, title, notes, due_date, due_time, priority, category, list_name, recurring, time_estimate_minutes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (user_id, title, notes, next_due.isoformat(), due_time, priority, category, list_name, recurring, time_estimate_minutes))
         except Exception:
             pass
 
-    # If just completed, auto-grow a garden flower!
+    # If completed, grow flower in user's garden
     flower_info = None
     if just_completed:
-        # Determine flower type and color based on category
-        cat_row = query_db("SELECT color FROM categories WHERE name = ?", (category,), one=True)
+        cat_row = query_db("SELECT color FROM categories WHERE name = ? AND user_id = ?", (category, user_id), one=True)
         flower_color = cat_row['color'] if cat_row else '#f472b6'
         
         type_map = {
@@ -407,42 +518,47 @@ def update_task(task_id):
         ry = round(random.uniform(40.0, 85.0), 1)
 
         fid = execute_db('''
-            INSERT INTO garden_flowers (task_id, flower_type, color, bloom_date, x_pct, y_pct)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (task_id, f_type, flower_color, date.today().isoformat(), rx, ry))
+            INSERT INTO garden_flowers (user_id, task_id, flower_type, color, bloom_date, x_pct, y_pct)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (user_id, task_id, f_type, flower_color, date.today().isoformat(), rx, ry))
         flower_info = {'id': fid, 'flower_type': f_type, 'color': flower_color, 'x_pct': rx, 'y_pct': ry}
 
-    updated = query_db("SELECT * FROM tasks WHERE id = ?", (task_id,), one=True)
+    updated = query_db("SELECT * FROM tasks WHERE id = ? AND user_id = ?", (task_id, user_id), one=True)
     res = dict(updated)
     res['subtasks'] = [dict(s) for s in query_db("SELECT * FROM subtasks WHERE task_id = ?", (task_id,))]
     res['new_flower'] = flower_info
     return jsonify(res)
 
 @app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
+@login_required
 def delete_task(task_id):
-    # Retrieve first to return in case of Undo
-    task = query_db("SELECT * FROM tasks WHERE id = ?", (task_id,), one=True)
+    user_id = get_current_user_id()
+    task = query_db("SELECT * FROM tasks WHERE id = ? AND user_id = ?", (task_id, user_id), one=True)
     if not task:
         return jsonify({'error': 'Task not found'}), 404
     t_dict = dict(task)
     t_dict['subtasks'] = [dict(s) for s in query_db("SELECT * FROM subtasks WHERE task_id = ?", (task_id,))]
 
     execute_db("DELETE FROM subtasks WHERE task_id = ?", (task_id,))
-    execute_db("DELETE FROM tasks WHERE id = ?", (task_id,))
+    execute_db("DELETE FROM tasks WHERE id = ? AND user_id = ?", (task_id, user_id))
     return jsonify({'success': True, 'deleted_task': t_dict})
 
 @app.route('/api/tasks/reorder', methods=['POST'])
+@login_required
 def reorder_tasks():
+    user_id = get_current_user_id()
     order_list = request.json.get('task_ids', [])
     for idx, tid in enumerate(order_list):
-        execute_db("UPDATE tasks SET order_index = ? WHERE id = ?", (idx, tid))
+        execute_db("UPDATE tasks SET order_index = ? WHERE id = ? AND user_id = ?", (idx, tid, user_id))
     return jsonify({'success': True})
 
 @app.route('/api/tasks/bulk', methods=['POST'])
+@login_required
 def bulk_actions():
+    user_id = get_current_user_id()
     data = request.json or {}
     task_ids = data.get('task_ids', [])
-    action = data.get('action')  # delete, complete, move_list, set_tag, snooze
+    action = data.get('action')
 
     if not task_ids:
         return jsonify({'error': 'No tasks provided'}), 400
@@ -452,35 +568,38 @@ def bulk_actions():
 
     if action == 'delete':
         cur.executemany("DELETE FROM subtasks WHERE task_id = ?", [(t,) for t in task_ids])
-        cur.executemany("DELETE FROM tasks WHERE id = ?", [(t,) for t in task_ids])
+        cur.executemany("DELETE FROM tasks WHERE id = ? AND user_id = ?", [(t, user_id) for t in task_ids])
     elif action == 'complete':
         now = datetime.utcnow().isoformat()
-        cur.executemany("UPDATE tasks SET is_completed = 1, completed_at = ? WHERE id = ?", [(now, t) for t in task_ids])
+        cur.executemany("UPDATE tasks SET is_completed = 1, completed_at = ? WHERE id = ? AND user_id = ?", [(now, t, user_id) for t in task_ids])
     elif action == 'move_list':
         target_list = data.get('list_name', 'Today')
-        cur.executemany("UPDATE tasks SET list_name = ? WHERE id = ?", [(target_list, t) for t in task_ids])
+        cur.executemany("UPDATE tasks SET list_name = ? WHERE id = ? AND user_id = ?", [(target_list, t, user_id) for t in task_ids])
     elif action == 'set_tag':
         category = data.get('category', 'Personal')
-        cur.executemany("UPDATE tasks SET category = ? WHERE id = ?", [(category, t) for t in task_ids])
+        cur.executemany("UPDATE tasks SET category = ? WHERE id = ? AND user_id = ?", [(category, t, user_id) for t in task_ids])
     elif action == 'snooze':
         days = int(data.get('days', 1))
         target_date = (date.today() + timedelta(days=days)).isoformat()
-        cur.executemany("UPDATE tasks SET due_date = ? WHERE id = ?", [(target_date, t) for t in task_ids])
+        cur.executemany("UPDATE tasks SET due_date = ? WHERE id = ? AND user_id = ?", [(target_date, t, user_id) for t in task_ids])
 
     conn.commit()
     conn.close()
     return jsonify({'success': True, 'count': len(task_ids)})
 
 @app.route('/api/tasks/<int:task_id>/time', methods=['POST'])
+@login_required
 def log_task_time(task_id):
+    user_id = get_current_user_id()
     data = request.json or {}
     additional_seconds = int(data.get('seconds', 0))
-    execute_db("UPDATE tasks SET time_spent_seconds = time_spent_seconds + ? WHERE id = ?", (additional_seconds, task_id))
-    task = query_db("SELECT id, time_spent_seconds FROM tasks WHERE id = ?", (task_id,), one=True)
+    execute_db("UPDATE tasks SET time_spent_seconds = time_spent_seconds + ? WHERE id = ? AND user_id = ?", (additional_seconds, task_id, user_id))
+    task = query_db("SELECT id, time_spent_seconds FROM tasks WHERE id = ? AND user_id = ?", (task_id, user_id), one=True)
     return jsonify(dict(task))
 
 # --- SUBTASKS API ---
 @app.route('/api/subtasks/<int:subtask_id>/toggle', methods=['POST'])
+@login_required
 def toggle_subtask(subtask_id):
     subtask = query_db("SELECT * FROM subtasks WHERE id = ?", (subtask_id,), one=True)
     if not subtask:
@@ -491,60 +610,66 @@ def toggle_subtask(subtask_id):
 
 # --- CATEGORIES & LISTS API ---
 @app.route('/api/categories', methods=['GET', 'POST'])
+@login_required
 def manage_categories():
+    user_id = get_current_user_id()
     if request.method == 'POST':
         name = request.json.get('name', '').strip()
         color = request.json.get('color', '#fbcfe8').strip()
         if not name:
             return jsonify({'error': 'Name required'}), 400
-        try:
-            cid = execute_db("INSERT INTO categories (name, color) VALUES (?, ?)", (name, color))
-            return jsonify({'id': cid, 'name': name, 'color': color}), 201
-        except sqlite3.IntegrityError:
-            return jsonify({'error': 'Category already exists'}), 409
-    cats = query_db("SELECT * FROM categories ORDER BY name ASC")
+        cid = execute_db("INSERT INTO categories (user_id, name, color) VALUES (?, ?, ?)", (user_id, name, color))
+        return jsonify({'id': cid, 'name': name, 'color': color}), 201
+
+    cats = query_db("SELECT * FROM categories WHERE user_id = ? ORDER BY name ASC", (user_id,))
     return jsonify([dict(c) for c in cats])
 
 @app.route('/api/categories/<int:cat_id>', methods=['DELETE'])
+@login_required
 def delete_category(cat_id):
-    execute_db("DELETE FROM categories WHERE id = ?", (cat_id,))
+    user_id = get_current_user_id()
+    execute_db("DELETE FROM categories WHERE id = ? AND user_id = ?", (cat_id, user_id))
     return jsonify({'success': True})
 
 @app.route('/api/lists', methods=['GET', 'POST'])
+@login_required
 def manage_lists():
+    user_id = get_current_user_id()
     if request.method == 'POST':
         name = request.json.get('name', '').strip()
         icon = request.json.get('icon', '🌸').strip()
         is_locked = 1 if request.json.get('is_locked') else 0
         if not name:
             return jsonify({'error': 'Name required'}), 400
-        try:
-            lid = execute_db("INSERT INTO lists (name, icon, is_locked) VALUES (?, ?, ?)", (name, icon, is_locked))
-            return jsonify({'id': lid, 'name': name, 'icon': icon, 'is_locked': is_locked}), 201
-        except sqlite3.IntegrityError:
-            return jsonify({'error': 'List already exists'}), 409
-    lists = query_db("SELECT * FROM lists ORDER BY id ASC")
+        lid = execute_db("INSERT INTO lists (user_id, name, icon, is_locked) VALUES (?, ?, ?, ?)", (user_id, name, icon, is_locked))
+        return jsonify({'id': lid, 'name': name, 'icon': icon, 'is_locked': is_locked}), 201
+
+    lists = query_db("SELECT * FROM lists WHERE user_id = ? ORDER BY id ASC", (user_id,))
     return jsonify([dict(l) for l in lists])
 
 @app.route('/api/lists/<int:list_id>', methods=['DELETE'])
+@login_required
 def delete_list(list_id):
-    execute_db("DELETE FROM lists WHERE id = ?", (list_id,))
+    user_id = get_current_user_id()
+    execute_db("DELETE FROM lists WHERE id = ? AND user_id = ?", (list_id, user_id))
     return jsonify({'success': True})
 
 # --- HABITS API ---
 @app.route('/api/habits', methods=['GET', 'POST'])
+@login_required
 def manage_habits():
+    user_id = get_current_user_id()
     if request.method == 'POST':
         name = request.json.get('name', '').strip()
         icon = request.json.get('icon', '✨').strip()
         target_days = int(request.json.get('target_days', 7))
         if not name:
             return jsonify({'error': 'Name required'}), 400
-        hid = execute_db("INSERT INTO habits (name, icon, target_days, logs_json) VALUES (?, ?, ?, '{}')",
-                         (name, icon, target_days))
+        hid = execute_db("INSERT INTO habits (user_id, name, icon, target_days, logs_json) VALUES (?, ?, ?, ?, '{}')",
+                         (user_id, name, icon, target_days))
         return jsonify({'id': hid, 'name': name, 'icon': icon, 'target_days': target_days, 'logs_json': '{}'}), 201
 
-    habits = query_db("SELECT * FROM habits ORDER BY id ASC")
+    habits = query_db("SELECT * FROM habits WHERE user_id = ? ORDER BY id ASC", (user_id,))
     res = []
     for h in habits:
         d = dict(h)
@@ -556,8 +681,10 @@ def manage_habits():
     return jsonify(res)
 
 @app.route('/api/habits/<int:habit_id>/toggle', methods=['POST'])
+@login_required
 def toggle_habit(habit_id):
-    habit = query_db("SELECT * FROM habits WHERE id = ?", (habit_id,), one=True)
+    user_id = get_current_user_id()
+    habit = query_db("SELECT * FROM habits WHERE id = ? AND user_id = ?", (habit_id, user_id), one=True)
     if not habit:
         return jsonify({'error': 'Habit not found'}), 404
     date_str = request.json.get('date', date.today().isoformat())
@@ -566,17 +693,21 @@ def toggle_habit(habit_id):
     current_val = logs.get(date_str, False)
     logs[date_str] = not current_val
 
-    execute_db("UPDATE habits SET logs_json = ? WHERE id = ?", (json.dumps(logs), habit_id))
+    execute_db("UPDATE habits SET logs_json = ? WHERE id = ? AND user_id = ?", (json.dumps(logs), habit_id, user_id))
     return jsonify({'id': habit_id, 'date': date_str, 'completed': logs[date_str], 'logs': logs})
 
 @app.route('/api/habits/<int:habit_id>', methods=['DELETE'])
+@login_required
 def delete_habit(habit_id):
-    execute_db("DELETE FROM habits WHERE id = ?", (habit_id,))
+    user_id = get_current_user_id()
+    execute_db("DELETE FROM habits WHERE id = ? AND user_id = ?", (habit_id, user_id))
     return jsonify({'success': True})
 
 # --- GOALS API ---
 @app.route('/api/goals', methods=['GET', 'POST'])
+@login_required
 def manage_goals():
+    user_id = get_current_user_id()
     if request.method == 'POST':
         title = request.json.get('title', '').strip()
         category = request.json.get('category', 'General')
@@ -584,20 +715,25 @@ def manage_goals():
         notes = request.json.get('notes', '')
         if not title:
             return jsonify({'error': 'Title required'}), 400
-        gid = execute_db("INSERT INTO goals (title, category, target_date, notes) VALUES (?, ?, ?, ?)",
-                         (title, category, target_date, notes))
+        gid = execute_db("INSERT INTO goals (user_id, title, category, target_date, notes) VALUES (?, ?, ?, ?, ?)",
+                         (user_id, title, category, target_date, notes))
         return jsonify({'id': gid, 'title': title, 'category': category, 'target_date': target_date, 'notes': notes}), 201
-    goals = query_db("SELECT * FROM goals ORDER BY id DESC")
+
+    goals = query_db("SELECT * FROM goals WHERE user_id = ? ORDER BY id DESC", (user_id,))
     return jsonify([dict(g) for g in goals])
 
 @app.route('/api/goals/<int:goal_id>', methods=['DELETE'])
+@login_required
 def delete_goal(goal_id):
-    execute_db("DELETE FROM goals WHERE id = ?", (goal_id,))
+    user_id = get_current_user_id()
+    execute_db("DELETE FROM goals WHERE id = ? AND user_id = ?", (goal_id, user_id))
     return jsonify({'success': True})
 
 # --- COUNTDOWNS API ---
 @app.route('/api/countdowns', methods=['GET', 'POST'])
+@login_required
 def manage_countdowns():
+    user_id = get_current_user_id()
     if request.method == 'POST':
         title = request.json.get('title', '').strip()
         target_date = request.json.get('target_date', '')
@@ -605,26 +741,33 @@ def manage_countdowns():
         note = request.json.get('note', '')
         if not title or not target_date:
             return jsonify({'error': 'Title and target date required'}), 400
-        cid = execute_db("INSERT INTO countdowns (title, target_date, emoji, note) VALUES (?, ?, ?, ?)",
-                         (title, target_date, emoji, note))
+        cid = execute_db("INSERT INTO countdowns (user_id, title, target_date, emoji, note) VALUES (?, ?, ?, ?, ?)",
+                         (user_id, title, target_date, emoji, note))
         return jsonify({'id': cid, 'title': title, 'target_date': target_date, 'emoji': emoji, 'note': note}), 201
-    countdowns = query_db("SELECT * FROM countdowns ORDER BY target_date ASC")
+
+    countdowns = query_db("SELECT * FROM countdowns WHERE user_id = ? ORDER BY target_date ASC", (user_id,))
     return jsonify([dict(c) for c in countdowns])
 
 @app.route('/api/countdowns/<int:cd_id>', methods=['DELETE'])
+@login_required
 def delete_countdown(cd_id):
-    execute_db("DELETE FROM countdowns WHERE id = ?", (cd_id,))
+    user_id = get_current_user_id()
+    execute_db("DELETE FROM countdowns WHERE id = ? AND user_id = ?", (cd_id, user_id))
     return jsonify({'success': True})
 
 # --- GARDEN & STICKERS & MOODS ---
 @app.route('/api/garden', methods=['GET'])
+@login_required
 def get_garden():
-    flowers = query_db("SELECT * FROM garden_flowers ORDER BY id ASC")
+    user_id = get_current_user_id()
+    flowers = query_db("SELECT * FROM garden_flowers WHERE user_id = ? ORDER BY id ASC", (user_id,))
     return jsonify([dict(f) for f in flowers])
 
 @app.route('/api/garden/clear', methods=['POST'])
+@login_required
 def clear_garden():
-    execute_db("DELETE FROM garden_flowers")
+    user_id = get_current_user_id()
+    execute_db("DELETE FROM garden_flowers WHERE user_id = ?", (user_id,))
     return jsonify({'success': True})
 
 @app.route('/api/stickers', methods=['GET'])
@@ -640,49 +783,52 @@ def unlock_sticker(key):
     return jsonify(dict(stk) if stk else {})
 
 @app.route('/api/moods', methods=['GET', 'POST'])
+@login_required
 def manage_moods():
+    user_id = get_current_user_id()
     if request.method == 'POST':
         date_str = request.json.get('date', date.today().isoformat())
         mood_emoji = request.json.get('mood_emoji', '🌸')
         note = request.json.get('note', '')
-        execute_db('''
-            INSERT INTO mood_logs (date_str, mood_emoji, note) VALUES (?, ?, ?)
-            ON CONFLICT(date_str) DO UPDATE SET mood_emoji=excluded.mood_emoji, note=excluded.note
-        ''', (date_str, mood_emoji, note))
+        existing = query_db("SELECT id FROM mood_logs WHERE user_id = ? AND date_str = ?", (user_id, date_str), one=True)
+        if existing:
+            execute_db("UPDATE mood_logs SET mood_emoji = ?, note = ? WHERE id = ?", (mood_emoji, note, existing['id']))
+        else:
+            execute_db("INSERT INTO mood_logs (user_id, date_str, mood_emoji, note) VALUES (?, ?, ?, ?)", (user_id, date_str, mood_emoji, note))
         return jsonify({'date_str': date_str, 'mood_emoji': mood_emoji, 'note': note})
-    moods = query_db("SELECT * FROM mood_logs ORDER BY date_str DESC LIMIT 30")
+
+    moods = query_db("SELECT * FROM mood_logs WHERE user_id = ? ORDER BY date_str DESC LIMIT 30", (user_id,))
     return jsonify([dict(m) for m in moods])
 
 # --- STATS & INSIGHTS ---
 @app.route('/api/stats', methods=['GET'])
+@login_required
 def get_stats():
+    user_id = get_current_user_id()
     conn = get_db()
     cur = conn.cursor()
 
-    total_tasks = cur.execute("SELECT COUNT(*) FROM tasks WHERE is_archived = 0").fetchone()[0]
-    completed_tasks = cur.execute("SELECT COUNT(*) FROM tasks WHERE is_completed = 1 AND is_archived = 0").fetchone()[0]
-    archived_tasks = cur.execute("SELECT COUNT(*) FROM tasks WHERE is_archived = 1").fetchone()[0]
+    total_tasks = cur.execute("SELECT COUNT(*) FROM tasks WHERE user_id = ? AND is_archived = 0", (user_id,)).fetchone()[0]
+    completed_tasks = cur.execute("SELECT COUNT(*) FROM tasks WHERE user_id = ? AND is_completed = 1 AND is_archived = 0", (user_id,)).fetchone()[0]
+    archived_tasks = cur.execute("SELECT COUNT(*) FROM tasks WHERE user_id = ? AND is_archived = 1", (user_id,)).fetchone()[0]
     completion_rate = round((completed_tasks / total_tasks * 100) if total_tasks > 0 else 0, 1)
 
-    # Category breakdown
     cat_counts = cur.execute('''
-        SELECT category, COUNT(*) as count FROM tasks WHERE is_archived = 0 GROUP BY category
-    ''').fetchall()
+        SELECT category, COUNT(*) as count FROM tasks WHERE user_id = ? AND is_archived = 0 GROUP BY category
+    ''', (user_id,)).fetchall()
     cat_breakdown = {row['category']: row['count'] for row in cat_counts}
 
-    # Time tracking total
-    time_spent_total = cur.execute("SELECT COALESCE(SUM(time_spent_seconds), 0) FROM tasks").fetchone()[0]
-    time_estimate_total = cur.execute("SELECT COALESCE(SUM(time_estimate_minutes), 0) FROM tasks WHERE is_completed = 0").fetchone()[0]
+    time_spent_total = cur.execute("SELECT COALESCE(SUM(time_spent_seconds), 0) FROM tasks WHERE user_id = ?", (user_id,)).fetchone()[0]
+    time_estimate_total = cur.execute("SELECT COALESCE(SUM(time_estimate_minutes), 0) FROM tasks WHERE user_id = ? AND is_completed = 0", (user_id,)).fetchone()[0]
 
-    # Weekly history (last 7 days completed tasks)
     today = date.today()
     weekly_activity = []
     for i in range(6, -1, -1):
         day = today - timedelta(days=i)
         day_str = day.isoformat()
         count = cur.execute('''
-            SELECT COUNT(*) FROM tasks WHERE completed_at LIKE ? AND is_completed = 1
-        ''', (f"{day_str}%",)).fetchone()[0]
+            SELECT COUNT(*) FROM tasks WHERE user_id = ? AND completed_at LIKE ? AND is_completed = 1
+        ''', (user_id, f"{day_str}%")).fetchone()[0]
         weekly_activity.append({
             'date': day_str,
             'day_name': day.strftime('%a'),
@@ -704,7 +850,9 @@ def get_stats():
 
 # --- TEMPLATES INJECTION ---
 @app.route('/api/templates/<tpl_type>', methods=['POST'])
+@login_required
 def drop_template(tpl_type):
+    user_id = get_current_user_id()
     today_str = date.today().isoformat()
     templates = {
         'morning_routine': [
@@ -737,109 +885,48 @@ def drop_template(tpl_type):
     created = []
     for item in selected:
         tid = execute_db('''
-            INSERT INTO tasks (title, notes, priority, category, due_date, time_estimate_minutes, list_name)
-            VALUES (?, ?, ?, ?, ?, ?, 'Today')
-        ''', (item[0], item[1], item[2], item[3], today_str, item[4]))
+            INSERT INTO tasks (user_id, title, notes, priority, category, due_date, time_estimate_minutes, list_name)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'Today')
+        ''', (user_id, item[0], item[1], item[2], item[3], today_str, item[4]))
         created.append(tid)
 
     return jsonify({'success': True, 'count': len(created)})
 
-# --- AUTH & SECURITY API ---
-@app.route('/api/auth/status', methods=['GET'])
-def auth_status():
-    p_hash = query_db("SELECT value FROM settings WHERE key = 'password_hash'", one=True)
-    hint = query_db("SELECT value FROM settings WHERE key = 'password_hint'", one=True)
-    auto_lock = query_db("SELECT value FROM settings WHERE key = 'auto_lock_mins'", one=True)
-    lock_blur = query_db("SELECT value FROM settings WHERE key = 'lock_on_blur'", one=True)
-
-    return jsonify({
-        'is_setup': bool(p_hash and p_hash['value']),
-        'hint': hint['value'] if hint else '',
-        'auto_lock_mins': int(auto_lock['value']) if auto_lock else 5,
-        'lock_on_blur': int(lock_blur['value']) if lock_blur else 0
-    })
-
-@app.route('/api/auth/setup', methods=['POST'])
-def auth_setup():
-    p_hash = query_db("SELECT value FROM settings WHERE key = 'password_hash'", one=True)
-    if p_hash and p_hash['value']:
-        return jsonify({'error': 'Password already configured. Use change password.'}), 400
-
-    password = request.json.get('password', '').strip()
-    hint = request.json.get('hint', '').strip()
-
-    if not password or len(password) < 4:
-        return jsonify({'error': 'Password must be at least 4 characters'}), 400
-
-    hashed = generate_password_hash(password)
-    execute_db("INSERT OR REPLACE INTO settings (key, value) VALUES ('password_hash', ?)", (hashed,))
-    execute_db("INSERT OR REPLACE INTO settings (key, value) VALUES ('password_hint', ?)", (hint,))
-    return jsonify({'success': True})
-
-@app.route('/api/auth/login', methods=['POST'])
-def auth_login():
-    p_hash = query_db("SELECT value FROM settings WHERE key = 'password_hash'", one=True)
-    if not p_hash or not p_hash['value']:
-        return jsonify({'success': True, 'notice': 'No password set'})
-
-    password = request.json.get('password', '')
-    if check_password_hash(p_hash['value'], password):
-        return jsonify({'success': True})
-    else:
-        return jsonify({'success': False, 'error': 'Incorrect password'}), 401
-
-@app.route('/api/auth/change_password', methods=['POST'])
-def auth_change():
-    p_hash = query_db("SELECT value FROM settings WHERE key = 'password_hash'", one=True)
-    old_pw = request.json.get('old_password', '')
-    new_pw = request.json.get('new_password', '').strip()
-    hint = request.json.get('hint', '').strip()
-
-    if p_hash and p_hash['value']:
-        if not check_password_hash(p_hash['value'], old_pw):
-            return jsonify({'error': 'Current password incorrect'}), 401
-
-    if not new_pw or len(new_pw) < 4:
-        return jsonify({'error': 'New password must be at least 4 characters'}), 400
-
-    hashed = generate_password_hash(new_pw)
-    execute_db("INSERT OR REPLACE INTO settings (key, value) VALUES ('password_hash', ?)", (hashed,))
-    if hint:
-        execute_db("INSERT OR REPLACE INTO settings (key, value) VALUES ('password_hint', ?)", (hint,))
-    return jsonify({'success': True})
-
 # --- SETTINGS API ---
 @app.route('/api/settings', methods=['GET', 'POST'])
+@login_required
 def manage_settings():
+    user_id = get_current_user_id()
     if request.method == 'POST':
         data = request.json or {}
         conn = get_db()
         cur = conn.cursor()
         for k, v in data.items():
-            if k != 'password_hash':  # protected
-                cur.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (k, str(v)))
+            cur.execute("INSERT OR REPLACE INTO settings (user_id, key, value) VALUES (?, ?, ?)", (user_id, k, str(v)))
         conn.commit()
         conn.close()
         return jsonify({'success': True})
 
-    settings_rows = query_db("SELECT key, value FROM settings WHERE key != 'password_hash'")
+    settings_rows = query_db("SELECT key, value FROM settings WHERE user_id = ?", (user_id,))
     return jsonify({r['key']: r['value'] for r in settings_rows})
 
 # --- DATA EXPORT & IMPORT ---
 @app.route('/api/export', methods=['GET'])
+@login_required
 def export_data():
+    user_id = get_current_user_id()
     fmt = request.args.get('format', 'json').lower()
     conn = get_db()
     cur = conn.cursor()
 
-    tasks = [dict(r) for r in cur.execute("SELECT * FROM tasks").fetchall()]
+    tasks = [dict(r) for r in cur.execute("SELECT * FROM tasks WHERE user_id = ?", (user_id,)).fetchall()]
     for t in tasks:
         t['subtasks'] = [dict(s) for s in cur.execute("SELECT * FROM subtasks WHERE task_id = ?", (t['id'],)).fetchall()]
 
-    habits = [dict(r) for r in cur.execute("SELECT * FROM habits").fetchall()]
-    goals = [dict(r) for r in cur.execute("SELECT * FROM goals").fetchall()]
-    categories = [dict(r) for r in cur.execute("SELECT * FROM categories").fetchall()]
-    lists = [dict(r) for r in cur.execute("SELECT * FROM lists").fetchall()]
+    habits = [dict(r) for r in cur.execute("SELECT * FROM habits WHERE user_id = ?", (user_id,)).fetchall()]
+    goals = [dict(r) for r in cur.execute("SELECT * FROM goals WHERE user_id = ?", (user_id,)).fetchall()]
+    categories = [dict(r) for r in cur.execute("SELECT * FROM categories WHERE user_id = ?", (user_id,)).fetchall()]
+    lists = [dict(r) for r in cur.execute("SELECT * FROM lists WHERE user_id = ?", (user_id,)).fetchall()]
     conn.close()
 
     if fmt == 'csv':
@@ -869,7 +956,9 @@ def export_data():
     return jsonify(export_payload)
 
 @app.route('/api/import', methods=['POST'])
+@login_required
 def import_data():
+    user_id = get_current_user_id()
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
 
@@ -883,10 +972,10 @@ def import_data():
             tasks = data.get('tasks', [])
             for t in tasks:
                 tid = execute_db('''
-                    INSERT INTO tasks (title, notes, due_date, due_time, priority, category, list_name,
+                    INSERT INTO tasks (user_id, title, notes, due_date, due_time, priority, category, list_name,
                                        is_pinned, is_completed, recurring, time_estimate_minutes)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (t.get('title', 'Imported Task'), t.get('notes', ''), t.get('due_date', ''),
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (user_id, t.get('title', 'Imported Task'), t.get('notes', ''), t.get('due_date', ''),
                       t.get('due_time', ''), t.get('priority', 'medium'), t.get('category', 'Personal'),
                       t.get('list_name', 'Today'), t.get('is_pinned', 0), t.get('is_completed', 0),
                       t.get('recurring', 'none'), t.get('time_estimate_minutes', 0)))
@@ -925,6 +1014,7 @@ def view_shared_list(share_id):
 
 # --- AI PDF SUMMARISATION ---
 @app.route('/api/ai/summarize-pdf', methods=['POST'])
+@login_required
 def summarize_pdf():
     if 'file' not in request.files:
         return jsonify({'error': 'No PDF file uploaded'}), 400
@@ -937,7 +1027,7 @@ def summarize_pdf():
         reader = pypdf.PdfReader(pdf_file)
         text_content = ""
         for idx, page in enumerate(reader.pages):
-            if idx > 25:  # limit to first 25 pages for speed and token limits
+            if idx > 25:
                 break
             extracted = page.extract_text()
             if extracted:
@@ -949,7 +1039,6 @@ def summarize_pdf():
 
         api_key = os.getenv('ANTHROPIC_API_KEY', '').strip()
 
-        # If Anthropic API key is available, call Anthropic API
         if api_key:
             try:
                 import anthropic
@@ -982,7 +1071,6 @@ def summarize_pdf():
                     messages=[{"role": "user", "content": prompt}]
                 )
                 response_text = msg.content[0].text
-                # Extract JSON if enclosed in markdown blocks
                 if "```json" in response_text:
                     response_text = response_text.split("```json")[1].split("```")[0].strip()
                 elif "```" in response_text:
@@ -994,11 +1082,9 @@ def summarize_pdf():
                     'tasks': result.get('tasks', []),
                     'ai_powered': True
                 })
-            except Exception as anthropic_err:
-                # Fallback to local heuristic parser if API call fails
+            except Exception:
                 pass
 
-        # Smart built-in heuristic extractor when no API key or error
         lines = [line.strip() for line in text_content.split('\n') if len(line.strip()) > 3]
         summary_lines = lines[:3]
         summary = " ".join(summary_lines)
@@ -1025,7 +1111,6 @@ def summarize_pdf():
                     break
 
         if not generated_tasks:
-            # Fallback tasks from top sections
             for l in lines[3:9]:
                 if len(l) > 10 and len(l) < 90:
                     generated_tasks.append({
@@ -1048,7 +1133,9 @@ def summarize_pdf():
 
 # --- OPTIONAL EMAIL SUMMARY ---
 @app.route('/api/email/summary', methods=['POST'])
+@login_required
 def send_email_summary():
+    user_id = get_current_user_id()
     recipient = request.json.get('email', '').strip()
     if not recipient:
         return jsonify({'error': 'Recipient email required'}), 400
@@ -1067,8 +1154,8 @@ def send_email_summary():
     conn = get_db()
     cur = conn.cursor()
     today_str = date.today().isoformat()
-    pending = cur.execute("SELECT title, priority, due_time FROM tasks WHERE is_completed = 0 AND due_date = ?", (today_str,)).fetchall()
-    completed = cur.execute("SELECT title FROM tasks WHERE is_completed = 1 AND completed_at LIKE ?", (f"{today_str}%",)).fetchall()
+    pending = cur.execute("SELECT title, priority, due_time FROM tasks WHERE user_id = ? AND is_completed = 0 AND due_date = ?", (user_id, today_str)).fetchall()
+    completed = cur.execute("SELECT title FROM tasks WHERE user_id = ? AND is_completed = 1 AND completed_at LIKE ?", (user_id, f"{today_str}%")).fetchall()
     conn.close()
 
     pending_html = ""

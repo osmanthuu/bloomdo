@@ -19,8 +19,48 @@
   <!-- Floating Petals Layer -->
   <div id="petal-container" aria-hidden="true"></div>
 
-  <!-- Main Container -->
-  <main class="app-container">
+  <!-- AUTHENTICATION PORTAL (FIRST SCREEN ON LAUNCH) -->
+  <div id="auth-portal-screen" class="auth-screen-wrapper">
+    <div class="auth-card">
+      <div class="washi-tape" style="top: -10px; left: 50%; transform: translateX(-50%) rotate(1deg); width: 120px;"></div>
+      
+      <div class="auth-mascot-icon">🐰🌸</div>
+      <h1 class="auth-title" id="auth-title">Pastel Blooms</h1>
+      <p class="auth-subtitle" id="auth-subtitle">Create an account to begin your lovely journey ✨</p>
+
+      <form id="auth-form" onsubmit="return false;" style="margin-top: 20px;">
+        <div class="form-group" style="text-align: left;">
+          <label class="form-label" for="auth-username-input">Username</label>
+          <input type="text" id="auth-username-input" class="form-input" placeholder="Choose a cute username" autocomplete="username" required />
+        </div>
+
+        <div class="form-group" style="text-align: left;">
+          <label class="form-label" for="auth-password-input">Password</label>
+          <input type="password" id="auth-password-input" class="form-input" placeholder="Enter password (min 4 chars)" autocomplete="current-password" required />
+        </div>
+
+        <div class="form-group" id="auth-confirm-group" style="text-align: left;">
+          <label class="form-label" for="auth-confirm-password-input">Confirm Password</label>
+          <input type="password" id="auth-confirm-password-input" class="form-input" placeholder="Confirm your password" autocomplete="new-password" />
+        </div>
+
+        <div id="auth-error-msg" class="auth-error-box" style="display: none;"></div>
+
+        <button type="submit" id="auth-submit-btn" class="btn-primary bloom-hover" style="width: 100%; justify-content: center; padding: 12px; font-size: 1rem; margin-top: 14px;">
+          Create Account & Enter 🌸
+        </button>
+      </form>
+
+      <div class="auth-toggle-bar">
+        <button type="button" id="auth-toggle-btn" class="auth-toggle-link">
+          Already have an account? Log in 🌸
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Container (Hidden until authenticated) -->
+  <main class="app-container" style="display: none;">
     
     <!-- Top Navigation Bar -->
     <header class="top-nav">
@@ -45,11 +85,15 @@
 
       <!-- Action Controls -->
       <div class="nav-actions">
+        <div class="streak-badge" id="nav-user-badge" style="display: flex; gap: 4px; background: var(--bg-secondary); color: var(--text-main);">
+          <span>👤</span> <span id="nav-username-text">User</span>
+        </div>
         <div class="streak-badge" id="streak-count-badge" title="Daily Completion Streak">🔥 1 Day Streak</div>
         <button class="icon-btn bloom-hover" id="mute-toggle-btn" title="Toggle Sound Chimes">🔔</button>
-        <button class="icon-btn bloom-hover" id="panic-lock-btn" title="Panic Lock (Alt+L)">🔒</button>
+        <button class="icon-btn bloom-hover" id="panic-lock-btn" title="Lock App (Alt+L)">🔒</button>
         <button class="icon-btn bloom-hover" id="shortcuts-btn" title="Keyboard Shortcuts (?)">⌨️</button>
         <button class="icon-btn bloom-hover" id="open-settings-btn" title="Theme & Preferences">⚙️</button>
+        <button class="icon-btn bloom-hover" id="nav-logout-btn" title="Log Out" style="color: #e11d48;">🚪</button>
       </div>
     </header>
 
