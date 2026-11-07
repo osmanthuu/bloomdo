@@ -44,8 +44,8 @@ def ensure_flask_running():
     max_retries = 25
     for _ in range(max_retries):
         try:
-            r = requests.get(f"http://127.0.0.1:{FLASK_PORT}/", timeout=1)
-            if r.status_code == 200:
+            r = requests.get(f"http://127.0.0.1:{FLASK_PORT}/login", timeout=1)
+            if r.status_code in (200, 302):
                 break
         except Exception:
             time.sleep(0.2)
