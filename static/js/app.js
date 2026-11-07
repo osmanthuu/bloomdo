@@ -77,7 +77,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function init() {
     loadLocalPreferences();
     applyPreferences();
-    await checkAuthStatus();
+    const authenticated = await checkAuthStatus();
+    if (!authenticated) return;
+
+    await loadAllData();
+    startPetals();
+    setupEventListeners();
+    setupKeyboardShortcuts();
+    setupInactivityTimer();
+    checkBackupReminder();
+    checkEndOfDayPrompt();
+    registerServiceWorker();
+
+    mascot.setState('happy', `Welcome, ${state.currentUser}! 🌸`);
   }
 
   // --- LOCAL PREFERENCES & THEMES ---
@@ -152,191 +164,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // --- AUTHENTICATION & PORTAL SCREEN ---
-  let authInitialized = false;
-
+  // --- AUTH STATUS CHECK ---
   async function checkAuthStatus() {
-    setupAuthEvents();
     try {
       const res = await fetch('/api/auth/status');
       const data = await res.json();
-      state.authConfig = data;
-
-      if (data.is_authenticated) {
-        // User is logged in! Show the main app.
-        onAuthSuccess(data.username);
-      } else {
-        // User not logged in. First screen must be the password/auth screen!
-        document.querySelector('.app-container').style.display = 'none';
-        document.getElementById('auth-portal-screen').style.display = 'flex';
-        if (data.has_users) {
-          setAuthMode('login');
-        } else {
-          setAuthMode('register');
-        }
+      if (!data.is_authenticated) {
+        window.location.href = '/login';
+        return false;
       }
+      state.currentUser = data.username;
+      const userText = document.getElementById('nav-username-text');
+      if (userText) userText.innerText = data.username;
+      return true;
     } catch (e) {
       console.log('Auth check error:', e);
+      window.location.href = '/login';
+      return false;
     }
   }
 
-  function setAuthMode(mode) {
-    state.authMode = mode;
-    const titleEl = document.getElementById('auth-title');
-    const subtitleEl = document.getElementById('auth-subtitle');
-    const confirmGroup = document.getElementById('auth-confirm-group');
-    const submitBtn = document.getElementById('auth-submit-btn');
-    const toggleBtn = document.getElementById('auth-toggle-btn');
-    const errBox = document.getElementById('auth-error-msg');
-
-    if (errBox) errBox.style.display = 'none';
-
-    if (mode === 'login') {
-      titleEl.innerText = 'Welcome Back! 🌸';
-      subtitleEl.innerText = 'Enter your username and password to unlock ✨';
-      confirmGroup.style.display = 'none';
-      submitBtn.innerText = 'Log In 🌸';
-      toggleBtn.innerText = 'Need an account? Register here ✨';
-    } else {
-      titleEl.innerText = 'Welcome to Pastel Blooms 🌸';
-      subtitleEl.innerText = 'Create an account to begin your lovely journey ✨';
-      confirmGroup.style.display = 'block';
-      submitBtn.innerText = 'Create Account & Enter 🌸';
-      toggleBtn.innerText = 'Already have an account? Log in 🌸';
-    }
-  }
-
-  function setupAuthEvents() {
-    if (authInitialized) return;
-    authInitialized = true;
-
-    const toggleBtn = document.getElementById('auth-toggle-btn');
-    const submitBtn = document.getElementById('auth-submit-btn');
-    const form = document.getElementById('auth-form');
-    const errBox = document.getElementById('auth-error-msg');
-
-    if (toggleBtn) {
-      toggleBtn.onclick = () => {
-        setAuthMode(state.authMode === 'login' ? 'register' : 'login');
-      };
-    }
-
-    async function handleAuthSubmit() {
-      const usernameInput = document.getElementById('auth-username-input');
-      const passwordInput = document.getElementById('auth-password-input');
-      const confirmInput = document.getElementById('auth-confirm-password-input');
-
-      const username = usernameInput.value.trim();
-      const password = passwordInput.value.trim();
-
-      if (!username || !password) {
-        showAuthError('Please fill in both username and password! 🌸');
-        return;
-      }
-
-      if (state.authMode === 'register') {
-        const confirm = confirmInput.value.trim();
-        if (password !== confirm) {
-          showAuthError('Passwords do not match! Please check again. 🌸');
-          return;
-        }
-        if (password.length < 4) {
-          showAuthError('Password must be at least 4 characters long. 🌸');
-          return;
-        }
-
-        try {
-          const res = await fetch('/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
-          });
-          const data = await res.json();
-          if (res.ok && data.success) {
-            onAuthSuccess(data.username);
-            showToast(`Welcome to your fresh pastel to-do list, ${data.username}! 🌸`);
-          } else {
-            showAuthError(data.error || 'Registration failed.');
-          }
-        } catch (err) {
-          showAuthError('Connection error. Please try again.');
-        }
-      } else {
-        // Log in
-        try {
-          const res = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
-          });
-          const data = await res.json();
-          if (res.ok && data.success) {
-            onAuthSuccess(data.username);
-            showToast(`Welcome back, ${data.username}! 🌸`);
-          } else {
-            showAuthError(data.error || 'Incorrect username or password.');
-          }
-        } catch (err) {
-          showAuthError('Connection error. Please try again.');
-        }
-      }
-    }
-
-    if (submitBtn) {
-      submitBtn.onclick = handleAuthSubmit;
-    }
-
-    if (form) {
-      form.onkeydown = (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          handleAuthSubmit();
-        }
-      };
-    }
-
-    // Top Navigation Logout button
-    const logoutBtn = document.getElementById('nav-logout-btn');
-    if (logoutBtn) {
-      logoutBtn.onclick = async () => {
-        await fetch('/api/auth/logout', { method: 'POST' });
-        state.currentUser = null;
-        state.tasks = [];
-        document.querySelector('.app-container').style.display = 'none';
-        document.getElementById('auth-portal-screen').style.display = 'flex';
-        setAuthMode('login');
-        document.getElementById('auth-password-input').value = '';
-        showToast('Logged out safely! 🌸');
-      };
-    }
-  }
-
-  function showAuthError(msg) {
-    const errBox = document.getElementById('auth-error-msg');
-    if (errBox) {
-      errBox.innerText = msg;
-      errBox.style.display = 'block';
-    }
-  }
-
-  async function onAuthSuccess(username) {
-    state.currentUser = username;
-    document.getElementById('auth-portal-screen').style.display = 'none';
-    document.querySelector('.app-container').style.display = 'block';
-
-    const userText = document.getElementById('nav-username-text');
-    if (userText) userText.innerText = username;
-
-    await loadAllData();
-    startPetals();
-    setupEventListeners();
-    setupKeyboardShortcuts();
-    setupInactivityTimer();
-    checkBackupReminder();
-    checkEndOfDayPrompt();
-    registerServiceWorker();
-
-    mascot.setState('happy', `Welcome, ${username}! Let's make today sweet! 🌸`);
+  function lockApp() {
+    window.location.href = '/logout';
   }
 
   // --- DATA LOADING & SYNC ---

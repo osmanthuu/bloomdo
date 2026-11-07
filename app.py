@@ -7,7 +7,7 @@ from functools import wraps
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, date, timedelta
-from flask import Flask, render_template, request, jsonify, send_from_directory, Response, session
+from flask import Flask, render_template, request, jsonify, send_from_directory, Response, session, redirect
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 import pypdf
@@ -235,7 +235,26 @@ def seed_defaults_for_user(user_id):
 # --- FRONTEND ROUTING & PWA ---
 @app.route('/')
 def index():
-    return render_template('index.html')
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect('/login')
+    user = query_db("SELECT id, username FROM users WHERE id = ?", (user_id,), one=True)
+    if not user:
+        session.clear()
+        return redirect('/login')
+    return render_template('index.html', username=user['username'])
+
+@app.route('/login')
+def login_page():
+    if session.get('user_id'):
+        return redirect('/')
+    user_count = query_db("SELECT COUNT(*) FROM users", one=True)[0]
+    return render_template('login.html', has_users=(user_count > 0))
+
+@app.route('/logout')
+def logout_page():
+    session.clear()
+    return redirect('/login')
 
 @app.route('/manifest.json')
 def manifest():

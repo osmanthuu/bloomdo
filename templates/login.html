@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="pink">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pastel Blooms 🌸 Log In or Sign Up</title>
+  <link rel="icon" type="image/svg+xml" href="/static/icons/icon.svg">
+  <link rel="stylesheet" href="/static/css/themes.css">
+  <link rel="stylesheet" href="/static/css/animations.css">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    body {
+      background-color: var(--bg-primary);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      font-family: 'Quicksand', sans-serif;
+    }
+    .auth-portal-card {
+      background: var(--card-bg);
+      border: 2px solid var(--card-border);
+      border-radius: 32px;
+      padding: 40px 36px 36px 36px;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 10px 30px rgba(244, 114, 182, 0.18);
+      position: relative;
+      text-align: center;
+      animation: cutePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .auth-tabs-header {
+      display: flex;
+      background: var(--bg-secondary);
+      border-radius: 20px;
+      padding: 4px;
+      margin: 22px 0 20px 0;
+      border: 1px solid var(--card-border);
+    }
+    .auth-tab-btn {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 16px;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .auth-tab-btn.active {
+      background: var(--card-bg);
+      color: var(--accent-hover);
+      box-shadow: 0 3px 10px rgba(244, 114, 182, 0.2);
+    }
+    .auth-form-panel {
+      text-align: left;
+    }
+    .auth-notice {
+      background: var(--bg-secondary);
+      border: 1px dashed var(--accent-color);
+      border-radius: 14px;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      color: var(--accent-hover);
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .auth-error {
+      background: #ffe4e6;
+      border: 1px solid #fecdd3;
+      color: #e11d48;
+      border-radius: 12px;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 14px;
+      display: none;
+    }
+  </style>
+</head>
+<body class="font-rounded">
+  
+  <div class="auth-portal-card">
+    <div class="washi-tape" style="top: -10px; left: 50%; transform: translateX(-50%) rotate(-1deg); width: 130px;"></div>
+
+    <div style="font-size: 50px; margin-bottom: 4px;">🐰🌸</div>
+    <h1 style="font-size: 1.6rem; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">Pastel Blooms</h1>
+    <p style="font-size: 0.9rem; color: var(--text-muted);">Cute, Serene & Password Protected</p>
+
+    <!-- Tab Buttons -->
+    <div class="auth-tabs-header">
+      <button type="button" class="auth-tab-btn {{ 'active' if has_users else '' }}" id="tab-btn-login">Log In 🌸</button>
+      <button type="button" class="auth-tab-btn {{ 'active' if not has_users else '' }}" id="tab-btn-register">Sign Up ✨</button>
+    </div>
+
+    <!-- Error message display -->
+    <div id="auth-error-display" class="auth-error"></div>
+
+    <!-- LOG IN FORM -->
+    <div id="panel-login" class="auth-form-panel" style="{{ 'display: block;' if has_users else 'display: none;' }}">
+      <div class="form-group">
+        <label class="form-label" for="login-username">Username</label>
+        <input type="text" id="login-username" class="form-input" placeholder="Enter your username" autocomplete="username" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="login-password">Password</label>
+        <input type="password" id="login-password" class="form-input" placeholder="Enter your password" autocomplete="current-password" />
+      </div>
+
+      <button type="button" id="btn-submit-login" class="btn-primary bloom-hover" style="width: 100%; justify-content: center; padding: 12px; font-size: 1rem; margin-top: 14px;">
+        Log In to My To-Dos 🌸
+      </button>
+    </div>
+
+    <!-- SIGN UP FORM -->
+    <div id="panel-register" class="auth-form-panel" style="{{ 'display: none;' if has_users else 'display: block;' }}">
+      <div class="auth-notice">
+        🌸 First time here? Create your password to secure your personal to-do list!
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="reg-username">Choose a Username</label>
+        <input type="text" id="reg-username" class="form-input" placeholder="e.g. mia, lily, alex" autocomplete="username" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="reg-password">Choose a Password</label>
+        <input type="password" id="reg-password" class="form-input" placeholder="At least 4 characters" autocomplete="new-password" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="reg-confirm">Confirm Password</label>
+        <input type="password" id="reg-confirm" class="form-input" placeholder="Re-enter your password" autocomplete="new-password" />
+      </div>
+
+      <button type="button" id="btn-submit-register" class="btn-primary bloom-hover" style="width: 100%; justify-content: center; padding: 12px; font-size: 1rem; margin-top: 14px;">
+        Create My Account & Enter ✨
+      </button>
+    </div>
+
+    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 22px;">
+      🔒 All tasks and personal notes are safely encrypted & protected.
+    </p>
+  </div>
+
+  <script>
+    const tabLogin = document.getElementById('tab-btn-login');
+    const tabRegister = document.getElementById('tab-btn-register');
+    const panelLogin = document.getElementById('panel-login');
+    const panelRegister = document.getElementById('panel-register');
+    const errBox = document.getElementById('auth-error-display');
+
+    function showError(msg) {
+      errBox.innerText = msg;
+      errBox.style.display = 'block';
+    }
+
+    function clearError() {
+      errBox.innerText = '';
+      errBox.style.display = 'none';
+    }
+
+    tabLogin.onclick = () => {
+      clearError();
+      tabLogin.classList.add('active');
+      tabRegister.classList.remove('active');
+      panelLogin.style.display = 'block';
+      panelRegister.style.display = 'none';
+    };
+
+    tabRegister.onclick = () => {
+      clearError();
+      tabRegister.classList.add('active');
+      tabLogin.classList.remove('active');
+      panelRegister.style.display = 'block';
+      panelLogin.style.display = 'none';
+    };
+
+    // Handle Login
+    document.getElementById('btn-submit-login').onclick = async () => {
+      clearError();
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value.trim();
+
+      if (!username || !password) {
+        showError('Please enter both your username and password! 🌸');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          window.location.href = '/';
+        } else {
+          showError(data.error || 'Incorrect username or password.');
+        }
+      } catch (e) {
+        showError('Network error. Please try again!');
+      }
+    };
+
+    // Handle Register
+    document.getElementById('btn-submit-register').onclick = async () => {
+      clearError();
+      const username = document.getElementById('reg-username').value.trim();
+      const password = document.getElementById('reg-password').value.trim();
+      const confirm = document.getElementById('reg-confirm').value.trim();
+
+      if (!username || !password) {
+        showError('Please choose a username and password! 🌸');
+        return;
+      }
+
+      if (username.length < 3) {
+        showError('Username must be at least 3 characters long. 🌸');
+        return;
+      }
+
+      if (password.length < 4) {
+        showError('Password must be at least 4 characters long. 🌸');
+        return;
+      }
+
+      if (password !== confirm) {
+        showError('Passwords do not match! Please check again. 🌸');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          window.location.href = '/';
+        } else {
+          showError(data.error || 'Registration failed.');
+        }
+      } catch (e) {
+        showError('Network error. Please try again!');
+      }
+    };
+
+    // Support Enter key
+    document.querySelectorAll('input').forEach(inp => {
+      inp.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          if (panelLogin.style.display !== 'none') {
+            document.getElementById('btn-submit-login').click();
+          } else {
+            document.getElementById('btn-submit-register').click();
+          }
+        }
+      };
+    });
+  </script>
+</body>
+</html>
